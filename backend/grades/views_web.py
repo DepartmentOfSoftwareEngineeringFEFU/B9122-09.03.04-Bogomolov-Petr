@@ -1,11 +1,13 @@
 from datetime import date
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 
 from accounts.models import User
 from grades.models import Grade
 from school.models import Class, Subject
+from schedule.models import Lesson
 
 
 @login_required
@@ -45,6 +47,62 @@ def grade_add(request):
         'students': students,
         'subjects': subjects,
         'today': date.today(),
+    })
+
+
+@login_required
+@user_passes_test(lambda u: u.role == 'teacher')
+def lesson_grade(request, lesson_id):
+    lesson = get_object_or_404(
+        Lesson.objects.select_related('subject', 'class_group'),
+        id=lesson_id, teacher=request.user,
+    )
+    students = User.objects.filter(
+        role='student', student_class=lesson.class_group,
+    ).order_by('full_name')
+
+    today = date.today()
+
+    if request.method == 'POST':
+        grade_vals = request.POST
+        saved = 0
+        for student in students:
+            key = f'grade_{student.id}'
+            if key in grade_vals and grade_vals[key].strip():
+                val = grade_vals[key].strip()
+                if val in ('1', '2', '3', '4', '5'):
+                    Grade.objects.update_or_create(
+                        student=student,
+                        subject=lesson.subject,
+                        date=today,
+                        teacher=request.user,
+                        defaults={'grade': int(val)},
+                    )
+                    saved += 1
+        if saved:
+            messages.success(request, f'Сохранено {saved} оценок')
+        else:
+            messages.warning(request, 'Нет оценок для сохранения')
+        return redirect('lesson_grade', lesson_id=lesson.id)
+
+    existing_grades = {
+        g.student_id: g
+        for g in Grade.objects.filter(
+            subject=lesson.subject, date=today, teacher=request.user,
+        )
+    }
+
+    DAY_NAMES = {
+        1: 'Понедельник', 2: 'Вторник', 3: 'Среда',
+        4: 'Четверг', 5: 'Пятница', 6: 'Суббота',
+    }
+
+    return render(request, 'teacher/lesson_grade.html', {
+        'lesson': lesson,
+        'students': students,
+        'existing_grades': existing_grades,
+        'today': today,
+        'day_name': DAY_NAMES.get(lesson.day_of_week, ''),
     })
 
 

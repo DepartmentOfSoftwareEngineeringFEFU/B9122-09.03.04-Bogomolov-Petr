@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% load web_extras %}
+{% block title %}Оценки за урок{% endblock %}
+{% block content %}
+<h1>{{ lesson.subject.name }}</h1>
+<div class="subtitle">{{ lesson.class_group.name }} · {{ day_name }}, {{ lesson.start_time|time:'H:i' }}–{{ lesson.end_time|time:'H:i' }}</div>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:40px;">№</th>
+                    <th>Ученик</th>
+                    <th style="width:120px;">Оценка</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td style="color:#999;">{{ forloop.counter }}</td>
+                    <td>
+                        <strong>{{ student.full_name }}</strong>
+                        {% if student.id in existing_grades %}
+                        <span class="badge badge-grade-{{ existing_grades|dictkey:student.id|attr:'grade' }}">
+                            Было: {{ existing_grades|dictkey:student.id|attr:'grade' }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <select name="grade_{{ student.id }}" class="grade-input" style="width:100%;">
+                            <option value="">—</option>
+                            {% for g in '54321'|make_list %}
+                            <option value="{{ g }}" {% if student.id in existing_grades and existing_grades|dictkey:student.id|attr:'grade'|stringformat:'s' == g %}selected{% endif %}>{{ g }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="text-center" style="color:#999;padding:24px;">
+                        В этом классе нет учеников
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if students %}
+    <div class="form-actions" style="margin-top:16px;">
+        <button type="submit" class="btn btn-success">💾 Сохранить оценки</button>
+        <a href="{% url 'teacher_schedule' %}" class="btn btn-outline">← Назад к расписанию</a>
+    </div>
+    {% endif %}
+</form>
+{% endblock %}

@@ -23,11 +23,13 @@
                 <td>
                     {% with day_lessons=grid|get_item:slot|get_item:day_num %}
                     {% for lesson in day_lessons %}
-                    <div class="schedule-lesson" style="background:#e8f5e9;">
-                        <div class="subj" style="color:#2e7d32;">{{ lesson.subject.name }}</div>
-                        <div class="meta">{{ lesson.class_group.name }}</div>
-                        <div class="room">{{ lesson.class_group.default_classroom }}</div>
-                    </div>
+                    <a href="{% url 'lesson_grade' lesson.id %}" style="text-decoration:none;display:block;">
+                        <div class="schedule-lesson" style="background:#e8f5e9;cursor:pointer;transition:.15s;" onmouseover="this.style.background='#c8e6c9'" onmouseout="this.style.background='#e8f5e9'">
+                            <div class="subj" style="color:#2e7d32;">{{ lesson.subject.name }}</div>
+                            <div class="meta">{{ lesson.class_group.name }}</div>
+                            <div class="room">{{ lesson.class_group.default_classroom }}</div>
+                        </div>
+                    </a>
                     {% empty %}
                     <span style="color:#ccc;font-size:12px;">—</span>
                     {% endfor %}
