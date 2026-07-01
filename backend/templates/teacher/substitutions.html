@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Мои замены{% endblock %}
+{% block content %}
+<h1>Мои замены</h1>
+<div class="subtitle">История запросов на замену</div>
+<div class="toolbar">
+    <a href="{% url 'substitution_request' %}" class="btn btn-success">+ Создать запрос</a>
+</div>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Дата</th>
+                <th>Занятие</th>
+                <th>Новый преподаватель</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sub in subs %}
+            <tr>
+                <td>{{ sub.request_date|date:'d.m.Y' }}</td>
+                <td>{{ sub.original_lesson.subject.name }} {{ sub.original_lesson.class_group.name }} ({{ sub.original_lesson.start_time|time:'H:i' }})</td>
+                <td>{{ sub.new_teacher.full_name }}</td>
+                <td><span class="badge {% if sub.status == 'pending' %}badge-pending{% elif sub.status == 'confirmed' %}badge-confirmed{% else %}badge-rejected{% endif %}">{{ sub.get_status_display }}</span></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center" style="color:#999;padding:24px;">Нет запросов</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

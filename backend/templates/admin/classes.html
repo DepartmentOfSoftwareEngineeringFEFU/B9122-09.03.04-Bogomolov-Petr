@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Классы{% endblock %}
+{% block content %}
+<h1>Классы</h1>
+<div class="subtitle">Управление классами и аудиториями</div>
+<div class="toolbar">
+    <a href="{% url 'class_create' %}" class="btn btn-primary">+ Добавить класс</a>
+</div>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th>Кл. руководитель</th>
+                <th>Аудитория</th>
+                <th>Учащихся</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cls in classes %}
+            <tr>
+                <td><strong>{{ cls.name }}</strong></td>
+                <td>{{ cls.homeroom_teacher.full_name|default:'—' }}</td>
+                <td>{{ cls.default_classroom }}</td>
+                <td>{{ cls.students.count }}</td>
+                <td class="actions">
+                    <a href="{% url 'class_edit' cls.pk %}" class="btn btn-outline btn-sm">✎</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center" style="color:#999;padding:24px;">Нет классов</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

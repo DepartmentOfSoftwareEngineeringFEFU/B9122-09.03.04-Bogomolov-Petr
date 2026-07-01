@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load web_extras %}
+{% block title %}Моё расписание{% endblock %}
+{% block content %}
+<h1>Моё расписание</h1>
+<div class="subtitle">{{ user.full_name }}</div>
+{% if grid %}
+<div class="schedule-grid">
+    <table>
+        <thead>
+            <tr>
+                <th style="width:60px;">Время</th>
+                {% for day_num, day_name in day_names %}
+                <th><div style="font-weight:700;color:#2e7d32;">{{ day_name|slice:":2"|upper }}</div></th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for slot in time_slots %}
+            <tr>
+                <td class="time-col">{{ slot }}</td>
+                {% for day_num, day_name in day_names %}
+                <td>
+                    {% with day_lessons=grid|get_item:slot|get_item:day_num %}
+                    {% for lesson in day_lessons %}
+                    <div class="schedule-lesson" style="background:#e8f5e9;">
+                        <div class="subj" style="color:#2e7d32;">{{ lesson.subject.name }}</div>
+                        <div class="meta">{{ lesson.class_group.name }}</div>
+                        <div class="room">{{ lesson.class_group.default_classroom }}</div>
+                    </div>
+                    {% empty %}
+                    <span style="color:#ccc;font-size:12px;">—</span>
+                    {% endfor %}
+                    {% endwith %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">Расписание пока не составлено.</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,79 @@
+classDiagram
+    class TimeSlot {
+        &lt;&lt;dataclass&gt;&gt;
+        +int day
+        +time start
+        +time end
+    }
+
+    class LessonVar {
+        &lt;&lt;dataclass&gt;&gt;
+        +int id
+        +int subject_id
+        +int class_id
+        +int teacher_id
+        +int duration_minutes
+        +list domain
+    }
+
+    class ConstraintChecker {
+        +no_teacher_overlap(schedule, lesson, slot)$ bool
+        +no_class_overlap(schedule, lesson, slot)$ bool
+        +valid_time(schedule, lesson, slot)$ bool
+        +correct_teacher(lesson, teacher_subjects)$ bool
+        +workload_ok(schedule, lesson, slot, max_hours)$ bool
+        +no_room_overlap(schedule, lesson, slot)$ bool
+    }
+
+    class VariableSelector {
+        +select(schedule, lessons, slots, constraints, teacher_subjects, max_hours)$ LessonVar
+    }
+
+    class ValueSelector {
+        +order(schedule, lesson, slots, lessons, constraints)$ list~TimeSlot~
+    }
+
+    class ScheduleSolver {
+        -list~LessonVar~ lessons
+        -list~TimeSlot~ slots
+        -int max_hours
+        -list constraints
+        -dict teacher_subjects
+        +__init__(lessons, slots, max_hours)
+        +set_teacher_subjects(mapping)
+        +solve() tuple~dict, list~
+        -_default_slots()$ list~TimeSlot~
+    }
+
+    class Lesson {
+        &lt;&lt;Django Model&gt;&gt;
+        +ForeignKey subject
+        +ForeignKey teacher
+        +ForeignKey class_group
+        +int day_of_week
+        +TimeField start_time
+        +TimeField end_time
+        +CharField lesson_type
+    }
+
+    class Subject {
+        &lt;&lt;Django Model&gt;&gt;
+        +CharField name
+    }
+
+    class Class {
+        &lt;&lt;Django Model&gt;&gt;
+        +CharField name
+        +ForeignKey homeroom_teacher
+        +CharField default_classroom
+    }
+
+    ScheduleSolver *-- TimeSlot : использует
+    ScheduleSolver *-- LessonVar : решает
+    ScheduleSolver --> ConstraintChecker : вызывает
+    ScheduleSolver --> VariableSelector : вызывает
+    ScheduleSolver --> ValueSelector : вызывает
+
+    Lesson --> Subject : FK
+    Lesson --> Class : FK
+    LessonVar ..> Lesson : DTO для solver

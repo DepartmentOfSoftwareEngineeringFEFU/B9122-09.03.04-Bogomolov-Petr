@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}{% if edit %}Редактирование{% else %}Добавление{% endif %} класса{% endblock %}
+{% block content %}
+<h1>{% if edit %}Редактирование{% else %}Добавление{% endif %} класса</h1>
+<div class="subtitle">{% if edit %}Изменение данных класса{% else %}Создание нового класса{% endif %}</div>
+<div class="form-card">
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="form-row">
+            <label>{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}<div class="errorlist">{{ error }}</div>{% endfor %}
+        </div>
+        {% endfor %}
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">💾 Сохранить</button>
+            <a href="{% url 'classes_list' %}" class="btn btn-outline">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

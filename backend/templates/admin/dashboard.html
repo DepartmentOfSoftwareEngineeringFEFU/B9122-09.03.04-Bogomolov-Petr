@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Панель администратора{% endblock %}
+{% block content %}
+<h1>Дашборд</h1>
+<div class="subtitle">Панель управления школой</div>
+
+<div class="cards">
+    <div class="card"><div class="num">{{ total_classes|default:'0' }}</div><div class="label">Классов</div></div>
+    <div class="card"><div class="num">{{ total_teachers|default:'0' }}</div><div class="label">Преподавателей</div></div>
+    <div class="card"><div class="num">{{ total_students|default:'0' }}</div><div class="label">Учащихся</div></div>
+    <div class="card">
+        <div class="num" style="{% if pending_substitutions %}color:#e65100{% endif %}">{{ pending_substitutions|default:'0' }}</div>
+        <div class="label">Активных замен</div>
+    </div>
+</div>
+
+{% if recent_subs %}
+<div class="section-title">Последние замены</div>
+<div class="table-wrap">
+    <table>
+        <tr><th>Дата</th><th>Занятие</th><th>Новый преподаватель</th><th>Статус</th></tr>
+        {% for sub in recent_subs %}
+        <tr>
+            <td>{{ sub.request_date|date:'d.m' }}</td>
+            <td>{{ sub.original_lesson.subject.name }} {{ sub.original_lesson.class_group.name }}</td>
+            <td>{{ sub.new_teacher.full_name }}</td>
+            <td><span class="badge {% if sub.status == 'pending' %}badge-pending{% elif sub.status == 'confirmed' %}badge-confirmed{% else %}badge-rejected{% endif %}">{{ sub.get_status_display }}</span></td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endif %}
+{% endblock %}

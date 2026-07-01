@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Отчёты{% endblock %}
+{% block content %}
+<h1>Отчёты и аналитика</h1>
+<div class="subtitle">Успеваемость и нагрузка по классам и дисциплинам</div>
+
+<div class="grid-2">
+    <div class="chart-card">
+        <h3>Нагрузка преподавателей</h3>
+        <table class="table" style="width:100%;border-collapse:collapse;">
+            <thead>
+                <tr><th style="text-align:left;padding:8px 12px;font-size:11px;color:#888;text-transform:uppercase;border-bottom:1px solid #eee;">Преподаватель</th><th style="text-align:left;padding:8px 12px;font-size:11px;color:#888;text-transform:uppercase;border-bottom:1px solid #eee;">Занятий</th></tr>
+            </thead>
+            <tbody>
+                {% for item in workload %}
+                <tr>
+                    <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f5f5f5;">{{ item.teacher__full_name }}</td>
+                    <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f5f5f5;"><strong>{{ item.count }}</strong></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="2" style="padding:16px;text-align:center;color:#999;">Нет данных</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="chart-card">
+        <h3>Средние оценки по предметам</h3>
+        <table class="table" style="width:100%;border-collapse:collapse;">
+            <thead>
+                <tr><th style="text-align:left;padding:8px 12px;font-size:11px;color:#888;text-transform:uppercase;border-bottom:1px solid #eee;">Предмет</th><th style="text-align:left;padding:8px 12px;font-size:11px;color:#888;text-transform:uppercase;border-bottom:1px solid #eee;">Средняя</th><th style="text-align:left;padding:8px 12px;font-size:11px;color:#888;text-transform:uppercase;border-bottom:1px solid #eee;">Кол-во</th></tr>
+            </thead>
+            <tbody>
+                {% for item in grade_stats %}
+                <tr>
+                    <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f5f5f5;">{{ item.subject__name }}</td>
+                    <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f5f5f5;"><strong>{{ item.avg_grade|floatformat:1 }}</strong></td>
+                    <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f5f5f5;">{{ item.count }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" style="padding:16px;text-align:center;color:#999;">Нет данных</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="chart-card">
+        <h3>Статистика расписания</h3>
+        <div style="padding:12px 0;">
+            <p style="font-size:14px;color:#333;margin-bottom:8px;">Всего занятий: <strong>{{ total_lessons }}</strong></p>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                {% for day_num, count in by_day.items %}
+                <span style="background:#e8eaf6;padding:4px 12px;border-radius:12px;font-size:13px;color:#1a237e;">
+                    {% if day_num == 1 %}Пн{% elif day_num == 2 %}Вт{% elif day_num == 3 %}Ср{% elif day_num == 4 %}Чт{% elif day_num == 5 %}Пт{% elif day_num == 6 %}Сб{% endif %}: {{ count }}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

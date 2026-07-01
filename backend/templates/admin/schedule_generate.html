@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Автогенерация расписания{% endblock %}
+{% block content %}
+<h1>Автогенерация расписания</h1>
+{% if created %}
+<div class="alert alert-success">
+    Создано <strong>{{ created }}</strong> занятий из {{ total }}.
+</div>
+{% endif %}
+{% if unresolved %}
+<div class="alert alert-warning">
+    Не удалось назначить <strong>{{ unresolved|length }}</strong> занятий. Проверьте ограничения (занятость преподавателей, пересечение классов и т.д.).
+</div>
+{% endif %}
+<div class="form-actions">
+    <a href="{% url 'schedule_list' %}" class="btn btn-primary">К расписанию</a>
+    <a href="{% url 'schedule_generate' %}" class="btn btn-success">⟳ Сгенерировать заново</a>
+</div>
+{% endblock %}

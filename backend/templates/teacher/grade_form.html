@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Выставление оценки{% endblock %}
+{% block content %}
+<h1>Выставление оценки</h1>
+<div class="subtitle">Добавление новой оценки</div>
+<div class="form-card">
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-row">
+            <label>Ученик</label>
+            <select name="student" class="form-select" required>
+                <option value="">— Выберите —</option>
+                {% for s in students %}
+                <option value="{{ s.id }}">{{ s.full_name }} ({{ s.student_class }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-row">
+            <label>Предмет</label>
+            <select name="subject" class="form-select" required>
+                <option value="">— Выберите —</option>
+                {% for subj in subjects %}
+                <option value="{{ subj.id }}">{{ subj.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-row">
+            <label>Оценка (1–5)</label>
+            <select name="grade" class="form-select" required>
+                <option value="5">5</option>
+                <option value="4">4</option>
+                <option value="3">3</option>
+                <option value="2">2</option>
+                <option value="1">1</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <label>Дата</label>
+            <input type="date" name="date" value="{{ today|date:'Y-m-d' }}" required>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-success">💾 Сохранить</button>
+            <a href="{% url 'teacher_grades' %}" class="btn btn-outline">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

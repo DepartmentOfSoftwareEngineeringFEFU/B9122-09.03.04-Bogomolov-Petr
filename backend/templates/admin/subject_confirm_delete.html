@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block title %}Удаление дисциплины{% endblock %}
+{% block content %}
+<h1>Удаление дисциплины</h1>
+<div class="form-card">
+    <p style="margin-bottom:16px;">Вы уверены, что хотите удалить дисциплину <strong>{{ subject.name }}</strong>?</p>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-actions">
+            <button type="submit" class="btn btn-danger">Удалить</button>
+            <a href="{% url 'subjects_list' %}" class="btn btn-outline">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

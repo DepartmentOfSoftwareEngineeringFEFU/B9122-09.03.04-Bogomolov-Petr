@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Мои оценки{% endblock %}
+{% block content %}
+<h1>Мои оценки</h1>
+<div class="subtitle">{{ user.full_name }}{% if user.student_class %} · {{ user.student_class.name }}{% endif %}</div>
+{% if subjects_data %}
+<div class="student-grades-grid">
+    {% for subject, data in subjects_data.items %}
+    <div class="subject-card">
+        <h3>📐 {{ subject.name }}</h3>
+        <div class="grades-row">
+            {% for grade in data.grades %}
+            <span class="grade-badge g{{ grade.grade }}">{{ grade.grade }}</span>
+            {% endfor %}
+        </div>
+        <div class="average-text">Средний балл: <strong>{{ data.avg|floatformat:2 }}</strong></div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info">У вас пока нет оценок.</div>
+{% endif %}
+{% endblock %}

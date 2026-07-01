@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Замена занятия{% endblock %}
+{% block content %}
+<h1>Замена занятия</h1>
+<div class="subtitle">Подача запроса на замену</div>
+<div class="form-card">
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-row">
+            <label>Занятие</label>
+            <select name="lesson" required>
+                <option value="">— Выберите —</option>
+                {% for lesson in lessons %}
+                <option value="{{ lesson.id }}">{{ lesson.subject.name }} {{ lesson.class_group.name }} — {% for d in lesson.DAY_CHOICES %}{% if d.0 == lesson.day_of_week %}{{ d.1 }}{% endif %}{% endfor %} {{ lesson.start_time|time:'H:i' }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-row">
+            <label>Новый преподаватель</label>
+            <select name="new_teacher" required>
+                <option value="">— Выберите —</option>
+                {% for t in teachers %}
+                <option value="{{ t.id }}">{{ t.full_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-row">
+            <label>Причина замены</label>
+            <textarea name="reason" placeholder="Опишите причину..." required></textarea>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-success">📩 Отправить запрос</button>
+            <a href="{% url 'substitutions_list' %}" class="btn btn-outline">Отмена</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

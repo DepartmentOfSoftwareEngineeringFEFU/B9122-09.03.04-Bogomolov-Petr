@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Пользователи{% endblock %}
+{% block content %}
+<h1>Пользователи</h1>
+<div class="subtitle">Управление учётными записями сотрудников и учащихся</div>
+<div class="toolbar">
+    <div class="filters">
+        <input type="text" id="userSearch" placeholder="Поиск по имени, логину..." style="padding:8px 12px;border:1px solid #d0d5dd;border-radius:6px;font-size:13px;width:280px;outline:none;">
+    </div>
+    <a href="{% url 'user_create' %}" class="btn btn-primary">+ Добавить пользователя</a>
+</div>
+<div class="table-wrap">
+    <table id="usersTable">
+        <thead>
+            <tr>
+                <th>ФИО</th>
+                <th>Логин</th>
+                <th>Роль</th>
+                <th>Телефон</th>
+                <th>Класс</th>
+                <th>Telegram</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td><strong>{{ user.full_name }}</strong></td>
+                <td>{{ user.username }}</td>
+                <td><span class="badge badge-{{ user.role }}">{{ user.get_role_display }}</span></td>
+                <td>{{ user.phone }}</td>
+                <td>{{ user.student_class|default:'—' }}</td>
+                <td>{% if user.telegram_id %}✅{% else %}❌{% endif %}</td>
+                <td class="actions">
+                    <a href="{% url 'user_edit' user.pk %}" class="btn btn-outline btn-sm">✎</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<script>
+document.getElementById('userSearch')?.addEventListener('input', function() {
+    const q = this.value.toLowerCase();
+    document.querySelectorAll('#usersTable tbody tr').forEach(row => {
+        row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+});
+</script>
+{% endblock %}

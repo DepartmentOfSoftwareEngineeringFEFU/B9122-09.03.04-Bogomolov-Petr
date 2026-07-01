@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Панель преподавателя{% endblock %}
+{% block content %}
+<h1>Дашборд</h1>
+<div class="subtitle">{{ user.full_name }}</div>
+<div class="cards">
+    <div class="card"><div class="num">{{ my_lessons_count|default:'0' }}</div><div class="label">Моих занятий</div></div>
+    <div class="card"><div class="num">{{ my_pending_subs|default:'0' }}</div><div class="label">Ожидают замены</div></div>
+    <div class="card"><div class="num" style="color:#2e7d32;">{{ my_confirmed_subs|default:'0' }}</div><div class="label">Замен подтверждено</div></div>
+</div>
+<div class="cards" style="margin-top:0;">
+    <div class="card" style="cursor:pointer;padding:24px;" onclick="location.href='{% url 'teacher_schedule' %}'">
+        <h5 style="font-size:16px;color:#2e7d32;">📅 Моё расписание</h5>
+        <p style="font-size:13px;color:#666;margin-top:4px;">Просмотр занятий</p>
+    </div>
+    <div class="card" style="cursor:pointer;padding:24px;" onclick="location.href='{% url 'teacher_grades' %}'">
+        <h5 style="font-size:16px;color:#2e7d32;">📝 Оценки</h5>
+        <p style="font-size:13px;color:#666;margin-top:4px;">Выставление успеваемости</p>
+    </div>
+    <div class="card" style="cursor:pointer;padding:24px;" onclick="location.href='{% url 'substitutions_list' %}'">
+        <h5 style="font-size:16px;color:#2e7d32;">🔄 Замена</h5>
+        <p style="font-size:13px;color:#666;margin-top:4px;">Подача запроса на замену</p>
+    </div>
+</div>
+{% endblock %}

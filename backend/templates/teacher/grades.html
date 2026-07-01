@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Оценки{% endblock %}
+{% block content %}
+<h1>Выставление оценок</h1>
+<div class="subtitle">Успеваемость учащихся</div>
+<div class="toolbar">
+    <a href="{% url 'grade_add' %}" class="btn btn-success">+ Выставить оценку</a>
+</div>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Ученик</th>
+                <th>Предмет</th>
+                <th>Оценка</th>
+                <th>Дата</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for grade in grades %}
+            <tr>
+                <td><strong>{{ grade.student.full_name }}</strong></td>
+                <td>{{ grade.subject.name }}</td>
+                <td><span class="badge badge-grade-{{ grade.grade }}">{{ grade.grade }}</span></td>
+                <td>{{ grade.date|date:'d.m.Y' }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center" style="color:#999;padding:24px;">Нет оценок</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

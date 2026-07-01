@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Дисциплины{% endblock %}
+{% block content %}
+<h1>Дисциплины</h1>
+<div class="subtitle">Управление учебными дисциплинами</div>
+<div class="toolbar">
+    <a href="{% url 'subject_create' %}" class="btn btn-primary">+ Добавить дисциплину</a>
+</div>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for subject in subjects %}
+            <tr>
+                <td><strong>{{ subject.name }}</strong></td>
+                <td class="actions">
+                    <a href="{% url 'subject_edit' subject.pk %}" class="btn btn-outline btn-sm">✎</a>
+                    <a href="{% url 'subject_delete' subject.pk %}" class="btn btn-danger btn-sm">✕</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="2" class="text-center" style="color:#999;padding:24px;">Нет дисциплин</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

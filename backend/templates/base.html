@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}School Manager{% endblock %}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { background: #f5f7fa; display: flex; min-height: 100vh; }
+        .sidebar {
+            width: 240px; min-height: 100vh;
+            display: flex; flex-direction: column;
+            position: fixed; top: 0; left: 0; bottom: 0;
+        }
+        {% if user.is_authenticated %}
+            {% if user.role == 'admin' %}
+        .sidebar { background: #1a237e; }
+            {% elif user.role == 'teacher' %}
+        .sidebar { background: #2e7d32; }
+            {% else %}
+        .sidebar { background: #e65100; }
+            {% endif %}
+        {% else %}
+        .sidebar { background: #1a237e; }
+        {% endif %}
+        .sidebar h2 {
+            padding: 20px 20px 16px; font-size: 18px; font-weight: 700;
+            border-bottom: 1px solid rgba(255,255,255,.15); margin-bottom: 4px;
+        }
+        .sidebar h2 a { color: #fff; text-decoration: none; }
+        .sidebar .nav { flex: 1; padding: 4px 0; }
+        .sidebar .nav a {
+            display: flex; align-items: center; gap: 10px;
+            padding: 11px 20px; color: rgba(255,255,255,.75);
+            text-decoration: none; font-size: 14px; transition: .15s;
+        }
+        .sidebar .nav a:hover { background: rgba(255,255,255,.1); color: #fff; }
+        .sidebar .nav a.active { background: rgba(255,255,255,.12); color: #fff; border-left: 3px solid #fff; }
+        .sidebar .user-info {
+            padding: 16px 20px; border-top: 1px solid rgba(255,255,255,.15);
+            font-size: 13px; color: #fff;
+        }
+        .sidebar .user-info small { opacity: .7; }
+        .sidebar .logout-form { padding: 4px 20px 16px; }
+        .sidebar .logout-form button {
+            background: transparent; border: 1px solid rgba(255,255,255,.3);
+            color: rgba(255,255,255,.7); padding: 6px 14px; border-radius: 6px;
+            font-size: 12px; cursor: pointer; width: 100%;
+        }
+        .sidebar .logout-form button:hover { background: rgba(255,255,255,.1); color: #fff; }
+        .main { margin-left: 240px; flex: 1; padding: 32px; max-width: calc(100vw - 240px); }
+        .main h1 { font-size: 24px; margin-bottom: 8px; }
+        {% if user.is_authenticated %}
+            {% if user.role == 'admin' %}
+        .main h1 { color: #1a237e; }
+            {% elif user.role == 'teacher' %}
+        .main h1 { color: #2e7d32; }
+            {% else %}
+        .main h1 { color: #e65100; }
+            {% endif %}
+        {% endif %}
+        .subtitle { font-size: 14px; color: #666; margin-bottom: 24px; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 16px; margin-bottom: 32px; }
+        .card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+        .card .num { font-size: 32px; font-weight: 700; }
+        .card .label { font-size: 13px; color: #666; margin-top: 4px; }
+        {% if user.is_authenticated %}
+            {% if user.role == 'admin' %}
+        .card .num { color: #1a237e; }
+            {% elif user.role == 'teacher' %}
+        .card .num { color: #2e7d32; }
+            {% else %}
+        .card .num { color: #e65100; }
+            {% endif %}
+        {% endif %}
+        .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+        .toolbar .filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .toolbar .filters select, .toolbar .filters input { padding: 8px 12px; border: 1px solid #d0d5dd; border-radius: 6px; font-size: 13px; outline: none; background: #fff; }
+        .toolbar .filters select:focus, .toolbar .filters input:focus { border-color: #1a237e; box-shadow: 0 0 0 2px rgba(26,35,126,.1); }
+        .section-title { font-size: 16px; font-weight: 600; color: #333; margin-bottom: 12px; margin-top: 24px; }
+        .table-wrap { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.06); overflow: hidden; margin-bottom: 24px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px 16px; font-size: 12px; color: #888; text-transform: uppercase; border-bottom: 2px solid #eee; background: #fafafa; }
+        td { padding: 12px 16px; font-size: 14px; border-bottom: 1px solid #f5f5f5; vertical-align: middle; }
+        tr:hover td { background: #f9fafb; }
+        .actions { display: flex; gap: 8px; }
+        .btn { padding: 8px 20px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+        .btn-primary { background: #1a237e; color: #fff; }
+        .btn-primary:hover { background: #283593; }
+        .btn-success { background: #2e7d32; color: #fff; }
+        .btn-success:hover { background: #388e3c; }
+        .btn-warning { background: #e65100; color: #fff; }
+        .btn-warning:hover { background: #ef6c00; }
+        .btn-danger { background: #c62828; color: #fff; }
+        .btn-danger:hover { background: #d32f2f; }
+        .btn-outline { background: #fff; color: #333; border: 1px solid #d0d5dd; }
+        .btn-outline:hover { background: #f5f5f5; }
+        .btn-sm { padding: 5px 12px; font-size: 12px; }
+        .badge { display: inline-block; padding: 3px 12px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+        .badge-admin { background: #e3f2fd; color: #1565c0; }
+        .badge-teacher { background: #e8f5e9; color: #2e7d32; }
+        .badge-student { background: #fff3e0; color: #e65100; }
+        .badge-pending { background: #fff3e0; color: #e65100; }
+        .badge-confirmed { background: #e8f5e9; color: #2e7d32; }
+        .badge-rejected { background: #fce4ec; color: #c62828; }
+        .badge-grade-5 { background: #e8f5e9; color: #2e7d32; }
+        .badge-grade-4 { background: #e3f2fd; color: #1565c0; }
+        .badge-grade-3 { background: #fff3e0; color: #e65100; }
+        .badge-grade-2 { background: #fce4ec; color: #c62828; }
+        .badge-grade-1 { background: #fce4ec; color: #c62828; }
+        .form-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.06); padding: 28px; max-width: 560px; }
+        .form-row { margin-bottom: 18px; }
+        .form-row label { display: block; font-size: 13px; color: #555; margin-bottom: 5px; font-weight: 500; }
+        .form-row input, .form-row select, .form-row textarea {
+            width: 100%; padding: 10px 12px; border: 1px solid #d0d5dd;
+            border-radius: 6px; font-size: 14px; outline: none; background: #fff;
+        }
+        .form-row textarea { resize: vertical; min-height: 80px; }
+        .form-row input:focus, .form-row select:focus, .form-row textarea:focus { border-color: #1a237e; box-shadow: 0 0 0 3px rgba(26,35,126,.1); }
+        .form-row .help-text { font-size: 12px; color: #888; margin-top: 4px; }
+        .form-row .errorlist { color: #c62828; font-size: 12px; list-style: none; margin-bottom: 4px; }
+        .form-actions { display: flex; gap: 10px; margin-top: 8px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .chart-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.06); padding: 20px; }
+        .chart-card h3 { font-size: 15px; color: #333; margin-bottom: 16px; }
+        .chart-placeholder { height: 200px; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; padding: 0 10px; }
+        .bar-row { display: flex; align-items: center; gap: 8px; }
+        .bar-row .bar-label { width: 60px; font-size: 12px; color: #555; text-align: right; }
+        .bar-row .bar { height: 22px; border-radius: 4px; min-width: 4px; }
+        .bar-row .bar-val { font-size: 12px; color: #888; }
+        .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; }
+        .alert-success { background: #e8f5e9; color: #2e7d32; }
+        .alert-warning { background: #fff3e0; color: #e65100; }
+        .alert-danger { background: #fce4ec; color: #c62828; }
+        .alert-info { background: #e3f2fd; color: #1565c0; }
+        .messages { margin-bottom: 16px; }
+        .page-controls { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+        .page-controls select, .page-controls input { padding: 8px 12px; border: 1px solid #d0d5dd; border-radius: 6px; font-size: 13px; outline: none; background: #fff; }
+        .page-controls select:focus, .page-controls input:focus { border-color: #1a237e; }
+        .schedule-grid { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.06); overflow-x: auto; }
+        .schedule-grid table { width: 100%; border-collapse: collapse; min-width: 700px; }
+        .schedule-grid th { text-align: center; padding: 10px 8px; font-size: 12px; color: #555; text-transform: uppercase; border-bottom: 2px solid #eee; background: #fafafa; }
+        .schedule-grid td { text-align: center; padding: 10px 8px; font-size: 13px; border-bottom: 1px solid #f5f5f5; vertical-align: top; }
+        .schedule-grid td.empty { color: #ccc; font-size: 12px; }
+        .schedule-grid .time-col { font-weight: 600; color: #333; font-size: 12px; white-space: nowrap; }
+        .schedule-lesson { border-radius: 6px; padding: 6px 8px; margin-bottom: 4px; font-size: 12px; }
+        .schedule-lesson .subj { font-weight: 600; }
+        .schedule-lesson .meta { color: #555; font-size: 11px; }
+        .schedule-lesson .room { color: #888; font-size: 11px; }
+        .side-admin .schedule-lesson { background: #e8eaf6; }
+        .side-admin .schedule-lesson .subj { color: #1a237e; }
+        .side-teacher .schedule-lesson { background: #e8f5e9; }
+        .side-teacher .schedule-lesson .subj { color: #2e7d32; }
+        .side-student .schedule-lesson { background: #fff3e0; }
+        .side-student .schedule-lesson .subj { color: #e65100; }
+        .student-grades-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .subject-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.06); padding: 20px; }
+        .subject-card h3 { font-size: 16px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #fff3e0; }
+        .side-student .subject-card h3 { color: #e65100; border-bottom-color: #fff3e0; }
+        .grades-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .grade-badge { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; font-size: 14px; font-weight: 600; }
+        .grade-badge.g5 { background: #e8f5e9; color: #2e7d32; }
+        .grade-badge.g4 { background: #e3f2fd; color: #1565c0; }
+        .grade-badge.g3 { background: #fff3e0; color: #e65100; }
+        .grade-badge.g2 { background: #fce4ec; color: #c62828; }
+        .grade-badge.g1 { background: #fce4ec; color: #c62828; }
+        .average-text { font-size: 13px; color: #888; }
+        .average-text strong { color: #333; }
+        .grade-input { width: 60px; padding: 6px 8px; border: 1px solid #d0d5dd; border-radius: 4px; text-align: center; font-size: 14px; outline: none; }
+        .grade-input:focus { border-color: #2e7d32; box-shadow: 0 0 0 2px rgba(46,125,50,.15); }
+        .today-column { outline: 2px solid #e65100; outline-offset: -1px; background: #fff8f0; }
+        .class-tag { display: inline-block; background: #fff3e0; color: #e65100; padding: 2px 14px; border-radius: 12px; font-size: 14px; font-weight: 600; margin-bottom: 20px; }
+        .pagination { display: flex; justify-content: center; gap: 4px; margin-top: 16px; }
+        .pagination a, .pagination span { padding: 6px 12px; border-radius: 6px; font-size: 13px; text-decoration: none; }
+        .pagination .current { background: #1a237e; color: #fff; }
+        .pagination a { background: #fff; color: #333; border: 1px solid #d0d5dd; }
+        .pagination a:hover { background: #f5f5f5; }
+    </style>
+</head>
+<body>
+{% if user.is_authenticated %}
+<div class="sidebar {% if user.role == 'admin' %}side-admin{% elif user.role == 'teacher' %}side-teacher{% else %}side-student{% endif %}">
+    <h2><a href="/">🏫 Школа</a></h2>
+    <div class="nav">
+        {% if user.role == 'admin' %}
+        <a href="{% url 'dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}class="active"{% endif %}>📊 Дашборд</a>
+        <a href="{% url 'users_list' %}" {% if 'users' in request.resolver_match.url_name %}class="active"{% endif %}>👥 Пользователи</a>
+        <a href="{% url 'classes_list' %}" {% if 'classes' in request.resolver_match.url_name or 'class' in request.resolver_match.url_name %}class="active"{% endif %}>📚 Классы</a>
+        <a href="{% url 'subjects_list' %}" {% if 'subject' in request.resolver_match.url_name %}class="active"{% endif %}>📖 Дисциплины</a>
+        <a href="{% url 'schedule_list' %}" {% if 'schedule' in request.resolver_match.url_name %}class="active"{% endif %}>📅 Расписание</a>
+        <a href="{% url 'substitutions_list' %}" {% if 'substitution' in request.resolver_match.url_name %}class="active"{% endif %}>🔄 Замены</a>
+        <a href="{% url 'reports_dashboard' %}" {% if 'reports' in request.resolver_match.url_name %}class="active"{% endif %}>📈 Отчёты</a>
+        {% elif user.role == 'teacher' %}
+        <a href="{% url 'dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}class="active"{% endif %}>📊 Дашборд</a>
+        <a href="{% url 'teacher_schedule' %}" {% if 'schedule' in request.resolver_match.url_name %}class="active"{% endif %}>📅 Моё расписание</a>
+        <a href="{% url 'teacher_grades' %}" {% if 'grade' in request.resolver_match.url_name %}class="active"{% endif %}>📝 Оценки</a>
+        <a href="{% url 'substitutions_list' %}" {% if 'substitution' in request.resolver_match.url_name %}class="active"{% endif %}>🔄 Замена</a>
+        {% elif user.role == 'student' %}
+        <a href="{% url 'dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}class="active"{% endif %}>📊 Дашборд</a>
+        <a href="{% url 'student_schedule' %}" {% if 'schedule' in request.resolver_match.url_name %}class="active"{% endif %}>📅 Расписание</a>
+        <a href="{% url 'student_grades' %}" {% if 'grade' in request.resolver_match.url_name %}class="active"{% endif %}>📊 Мои оценки</a>
+        {% endif %}
+        <a href="{% url 'profile' %}" {% if request.resolver_match.url_name == 'profile' %}class="active"{% endif %}>⚙️ Профиль</a>
+    </div>
+    <div class="user-info">
+        👤 {{ user.full_name }}<br>
+        <small>{{ user.get_role_display }}{% if user.role == 'student' and user.student_class %} · {{ user.student_class.name }}{% endif %}</small>
+    </div>
+    <form class="logout-form" action="{% url 'logout' %}" method="post">
+        {% csrf_token %}
+        <button type="submit">🚪 Выйти</button>
+    </form>
+</div>
+{% endif %}
+<div class="main">
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% else %}alert-info{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+</div>
+</body>
+</html>

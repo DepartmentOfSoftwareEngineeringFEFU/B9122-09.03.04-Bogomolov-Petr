@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+
+# Django
+db.sqlite3
+*.mo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Environment
+.env
+
+# Bot
+bot_last_run.log
+
+# Binaries / large downloads
+tor-browser/
+tor-browser-windows-x86_64-portable-*.exe
+zapret/
+goodbyedpi/
+
+# Temp files
+users.json
+users.txt

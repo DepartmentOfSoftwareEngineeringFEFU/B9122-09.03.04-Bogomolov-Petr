@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Вход в систему{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:center;align-items:center;min-height:80vh;">
+    <div class="form-card" style="width:400px;text-align:center;">
+        <div style="margin-bottom:24px;">
+            <h1 style="font-size:22px;color:#1a237e;font-weight:700;margin:0;">🏫 Управление школой</h1>
+            <p style="font-size:13px;color:#666;margin-top:4px;">Вход в систему</p>
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            {% if form.errors %}
+            <div class="alert alert-danger">Неверный логин или пароль</div>
+            {% endif %}
+            <div class="form-row">
+                <label>Логин</label>
+                <input type="text" name="username" placeholder="Введите логин" required autofocus>
+            </div>
+            <div class="form-row">
+                <label>Пароль</label>
+                <input type="password" name="password" placeholder="Введите пароль" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%;padding:12px;font-size:15px;">Войти</button>
+        </form>
+        <div style="margin-top:20px;font-size:13px;color:#888;">
+            Разработка и реализация программной системы для управления школой
+        </div>
+    </div>
+</div>
+{% endblock %}
