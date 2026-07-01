@@ -6,7 +6,7 @@
 ## Стек
 
 - Python 3.11+, Django 5+, Django REST Framework
-- SQLite (по умолчанию) / PostgreSQL
+- SQLite
 - python-telegram-bot 20.x
 
 ## Быстрый запуск
