@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Class, Subject
+from .models import Class, ClassSubject, Subject
 
 
 class ClassSerializer(serializers.ModelSerializer):
@@ -29,3 +29,12 @@ class SubjectSerializer(serializers.ModelSerializer):
 
     def get_lesson_count(self, obj):
         return obj.lesson_set.count()
+
+
+class ClassSubjectSerializer(serializers.ModelSerializer):
+    class_name = serializers.CharField(source='class_group.name', read_only=True)
+    subject_name = serializers.CharField(source='subject.name', read_only=True)
+
+    class Meta:
+        model = ClassSubject
+        fields = ['id', 'class_group', 'class_name', 'subject', 'subject_name', 'hours_per_week']

@@ -6,7 +6,7 @@ from accounts.views_web import dashboard, profile_edit, user_create, user_edit, 
 from grades.views_web import grade_add, lesson_grade, student_grades, teacher_grades
 from reports.views_web import reports_dashboard
 from schedule.views_web import (my_schedule, schedule_add, schedule_generate,
-                                schedule_list, schedule_move)
+                                schedule_list, schedule_move, teacher_workload)
 from school.views_web import (classes_list, class_create, class_edit,
                                subject_create, subject_delete, subject_edit,
                                subjects_list)
@@ -40,6 +40,7 @@ urlpatterns = [
     path('teacher/grades/', teacher_grades, name='teacher_grades'),
     path('teacher/grades/add/', grade_add, name='grade_add'),
     path('teacher/lessons/<int:lesson_id>/grade/', lesson_grade, name='lesson_grade'),
+    path('teacher/workload/', teacher_workload, name='teacher_workload'),
     path('student/schedule/', my_schedule, name='student_schedule'),
     path('student/grades/', student_grades, name='student_grades'),
     path('profile/', profile_edit, name='profile'),

@@ -9,7 +9,7 @@ django.setup()
 
 from django.contrib.auth.hashers import make_password
 from accounts.models import User
-from school.models import Class, Subject
+from school.models import Class, ClassSubject, Subject
 from schedule.models import Lesson
 from grades.models import Grade
 from substitutions.models import Substitution
@@ -36,6 +36,7 @@ def seed():
             'full_name': 'Иванова Мария Петровна',
             'phone': '+7(999)111-22-34',
             'role': 'teacher',
+            'max_hours_per_week': 24,
             'password': make_password('teacher1'),
         },
     )
@@ -46,6 +47,7 @@ def seed():
             'full_name': 'Петров Сергей Владимирович',
             'phone': '+7(999)111-22-35',
             'role': 'teacher',
+            'max_hours_per_week': 24,
             'password': make_password('teacher2'),
         },
     )
@@ -73,16 +75,15 @@ def seed():
         subjects[name] = subj
 
     students_data = [
-        ('Алексеев Дмитрий', class_a),
-        ('Белова Анна', class_a),
-        ('Васильев Иван', class_a),
-        ('Григорьев Максим', class_b),
-        ('Дмитриева Ольга', class_b),
-        ('Егоров Артём', class_b),
+        ('Алексеев Дмитрий', class_a, 'alekseev'),
+        ('Белова Анна', class_a, 'belova'),
+        ('Васильев Иван', class_a, 'vasilev'),
+        ('Григорьев Максим', class_b, 'grigorev'),
+        ('Дмитриева Ольга', class_b, 'dmitrieva'),
+        ('Егоров Артём', class_b, 'egorov'),
     ]
     students = []
-    for full_name, cls in students_data:
-        login = full_name.split()[0].lower()
+    for full_name, cls, login in students_data:
         student, _ = User.objects.get_or_create(
             username=login,
             defaults={
@@ -94,6 +95,23 @@ def seed():
             },
         )
         students.append(student)
+
+    curriculum_data = [
+        (class_a, subjects['Математика'], 2),
+        (class_a, subjects['Физика'], 2),
+        (class_a, subjects['Информатика'], 1),
+        (class_a, subjects['Английский язык'], 1),
+        (class_b, subjects['Русский язык'], 1),
+        (class_b, subjects['Литература'], 1),
+        (class_b, subjects['Информатика'], 1),
+        (class_b, subjects['История'], 1),
+        (class_b, subjects['Математика'], 1),
+    ]
+    for cls, subj, hours in curriculum_data:
+        ClassSubject.objects.get_or_create(
+            class_group=cls, subject=subj,
+            defaults={'hours_per_week': hours},
+        )
 
     lessons_data = [
         (subjects['Математика'], teacher1, class_a, 1, '08:00', '08:45', 'лекция'),

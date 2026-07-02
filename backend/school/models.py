@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 
@@ -31,3 +32,27 @@ class Subject(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class ClassSubject(models.Model):
+    class_group = models.ForeignKey(
+        Class, verbose_name='Класс', on_delete=models.CASCADE,
+        related_name='curriculum',
+    )
+    subject = models.ForeignKey(
+        Subject, verbose_name='Дисциплина', on_delete=models.CASCADE,
+    )
+    hours_per_week = models.IntegerField(
+        'Часов в неделю',
+        validators=[MinValueValidator(1), MaxValueValidator(40)],
+        default=2,
+    )
+
+    class Meta:
+        verbose_name = 'Учебный план'
+        verbose_name_plural = 'Учебные планы'
+        unique_together = ['class_group', 'subject']
+        ordering = ['class_group', 'subject']
+
+    def __str__(self):
+        return f'{self.class_group} — {self.subject} ({self.hours_per_week} ч/нед)'

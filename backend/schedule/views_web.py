@@ -8,7 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from accounts.models import User
-from school.models import Class, Subject
+from school.models import Class, ClassSubject, Subject
 from .forms import LessonForm
 from .models import Lesson
 
@@ -132,30 +132,42 @@ def schedule_add(request):
 @login_required
 @user_passes_test(lambda u: u.role == 'admin')
 def schedule_generate(request):
-    from .solver import ScheduleSolver
+    if request.method != 'POST':
+        return render(request, 'admin/schedule_generate.html', {'created': None})
 
-    teachers = User.objects.filter(role='teacher').prefetch_related('lessons_taught')
-    classes = Class.objects.all()
-    subjects = Subject.objects.all()
+    from .solver import ScheduleSolver, LessonVar
 
+    teachers = User.objects.filter(role='teacher')
     teacher_subjects = {}
     for t in teachers:
-        teacher_subjects[t.id] = set()
-        for l in Lesson.objects.filter(teacher=t):
-            teacher_subjects[t.id].add(l.subject_id)
+        teacher_subjects[t.id] = set(
+            Lesson.objects.filter(teacher=t).values_list('subject_id', flat=True)
+        )
+
+    curriculum = ClassSubject.objects.select_related('class_group', 'subject').all()
+    if not curriculum.exists():
+        return render(request, 'admin/schedule_generate.html', {
+            'error': 'Не заполнен учебный план. Добавьте дисциплины для классов.',
+            'created': 0, 'unresolved': [], 'total': 0,
+        })
 
     lessons = []
-    for cls in classes:
-        for subj in subjects:
-            for teacher in teachers:
-                if subj.id in teacher_subjects.get(teacher.id, set()):
-                    from .solver import LessonVar
+    for entry in curriculum:
+        for teacher in teachers:
+            if entry.subject_id in teacher_subjects.get(teacher.id, set()):
+                for _ in range(entry.hours_per_week):
                     lessons.append(LessonVar(
                         id=len(lessons) + 1,
-                        subject_id=subj.id,
-                        class_id=cls.id,
+                        subject_id=entry.subject_id,
+                        class_id=entry.class_group_id,
                         teacher_id=teacher.id,
                     ))
+
+    if not lessons:
+        return render(request, 'admin/schedule_generate.html', {
+            'error': 'Нет уроков для генерации. Назначьте преподавателей на дисциплины.',
+            'created': 0, 'unresolved': [], 'total': 0,
+        })
 
     solver = ScheduleSolver(lessons)
     solver.set_teacher_subjects(teacher_subjects)
@@ -179,6 +191,23 @@ def schedule_generate(request):
         'created': created,
         'unresolved': unresolved,
         'total': len(lessons),
+    })
+
+
+@login_required
+@user_passes_test(lambda u: u.role == 'teacher')
+def teacher_workload(request):
+    user = request.user
+    lessons = Lesson.objects.filter(teacher=user).select_related('subject', 'class_group')
+    total_hours = sum(
+        (l.end_time.hour + l.end_time.minute / 60) - (l.start_time.hour + l.start_time.minute / 60)
+        for l in lessons
+    )
+    max_hours = user.max_hours_per_week or 36
+    return render(request, 'teacher/workload.html', {
+        'lessons': lessons,
+        'total_hours': round(total_hours, 1),
+        'max_hours': max_hours,
     })
 
 

@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import ClassForm, SubjectForm
-from .models import Class, Subject
+from .models import Class, ClassSubject, Subject
 
 
 @login_required
@@ -88,3 +88,58 @@ def subject_delete(request, pk):
         messages.success(request, 'Дисциплина удалена')
         return redirect('subjects_list')
     return render(request, 'admin/subject_confirm_delete.html', {'subject': subject})
+
+
+@login_required
+@user_passes_test(lambda u: u.role == 'admin')
+def curriculum_list(request, class_pk):
+    cls = get_object_or_404(Class, pk=class_pk)
+    items = ClassSubject.objects.filter(class_group=cls).select_related('subject')
+    return render(request, 'admin/curriculum_list.html', {'cls': cls, 'items': items})
+
+
+@login_required
+@user_passes_test(lambda u: u.role == 'admin')
+def curriculum_add(request, class_pk):
+    cls = get_object_or_404(Class, pk=class_pk)
+    if request.method == 'POST':
+        subject_id = request.POST.get('subject')
+        hours = request.POST.get('hours_per_week', 2)
+        if subject_id:
+            ClassSubject.objects.get_or_create(
+                class_group=cls,
+                subject_id=subject_id,
+                defaults={'hours_per_week': hours},
+            )
+            messages.success(request, 'Дисциплина добавлена в учебный план')
+        return redirect('curriculum_list', class_pk=cls.pk)
+    subjects = Subject.objects.exclude(
+        id__in=ClassSubject.objects.filter(class_group=cls).values('subject_id')
+    )
+    return render(request, 'admin/curriculum_form.html', {'cls': cls, 'subjects': subjects})
+
+
+@login_required
+@user_passes_test(lambda u: u.role == 'admin')
+def curriculum_edit(request, pk):
+    item = get_object_or_404(ClassSubject, pk=pk)
+    if request.method == 'POST':
+        hours = request.POST.get('hours_per_week', 2)
+        try:
+            item.hours_per_week = int(hours)
+            item.save(update_fields=['hours_per_week'])
+            messages.success(request, 'Учебный план обновлён')
+        except (ValueError, TypeError):
+            messages.error(request, 'Некорректное количество часов')
+        return redirect('curriculum_list', class_pk=item.class_group_id)
+    return render(request, 'admin/curriculum_edit.html', {'item': item})
+
+
+@login_required
+@user_passes_test(lambda u: u.role == 'admin')
+def curriculum_delete(request, pk):
+    item = get_object_or_404(ClassSubject, pk=pk)
+    class_pk = item.class_group_id
+    item.delete()
+    messages.success(request, 'Дисциплина удалена из учебного плана')
+    return redirect('curriculum_list', class_pk=class_pk)

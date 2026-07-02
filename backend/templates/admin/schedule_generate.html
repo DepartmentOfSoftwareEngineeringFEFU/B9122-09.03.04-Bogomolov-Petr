@@ -2,18 +2,34 @@
 {% block title %}Автогенерация расписания{% endblock %}
 {% block content %}
 <h1>Автогенерация расписания</h1>
-{% if created %}
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+<div class="form-actions">
+    <a href="{% url 'classes_list' %}" class="btn btn-primary">К учебным планам</a>
+    <a href="{% url 'schedule_generate' %}" class="btn btn-outline">⟳ Попробовать снова</a>
+</div>
+{% elif created is not None %}
 <div class="alert alert-success">
     Создано <strong>{{ created }}</strong> занятий из {{ total }}.
 </div>
-{% endif %}
 {% if unresolved %}
 <div class="alert alert-warning">
-    Не удалось назначить <strong>{{ unresolved|length }}</strong> занятий. Проверьте ограничения (занятость преподавателей, пересечение классов и т.д.).
+    Не удалось назначить <strong>{{ unresolved|length }}</strong> занятий (из {{ total }}). Проверьте ограничения.
 </div>
 {% endif %}
 <div class="form-actions">
     <a href="{% url 'schedule_list' %}" class="btn btn-primary">К расписанию</a>
     <a href="{% url 'schedule_generate' %}" class="btn btn-success">⟳ Сгенерировать заново</a>
 </div>
+{% else %}
+<form method="post" class="form" action="{% url 'schedule_generate' %}">
+    {% csrf_token %}
+    <p>Будет выполнена автоматическая генерация расписания на основе учебных планов классов.</p>
+    <p class="text-muted">Все текущие занятия будут удалены и заменены сгенерированными.</p>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Начать генерацию</button>
+        <a href="{% url 'schedule_list' %}" class="btn btn-outline">Отмена</a>
+    </div>
+</form>
+{% endif %}
 {% endblock %}

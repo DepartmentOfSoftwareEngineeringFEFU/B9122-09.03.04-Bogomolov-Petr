@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Моя нагрузка{% endblock %}
+{% block content %}
+<h1>Моя нагрузка</h1>
+<div class="subtitle">Недельная занятость</div>
+
+<div class="card" style="padding:24px;margin-bottom:24px;background:var(--bg-card);border-radius:12px;">
+    <div style="font-size:2rem;font-weight:700;">{{ total_hours }} / {{ max_hours }} ч.</div>
+    <div style="margin-top:8px;background:#eee;border-radius:8px;height:12px;overflow:hidden;">
+        {% widthratio total_hours max_hours 100 as pct %}
+        <div style="width:{{ pct|default:0 }}%;height:100%;background:{% if pct > 90 %}#e74c3c{% elif pct > 70 %}#f39c12{% else %}#27ae60{% endif %};transition:width 0.3s;"></div>
+    </div>
+</div>
+
+<h2>Мои занятия ({{ lessons|length }})</h2>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>День</th>
+                <th>Время</th>
+                <th>Дисциплина</th>
+                <th>Класс</th>
+                <th>Тип</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for l in lessons %}
+            <tr>
+                <td>{{ l.get_day_of_week_display }}</td>
+                <td>{{ l.start_time|time:'H:i' }}–{{ l.end_time|time:'H:i' }}</td>
+                <td>{{ l.subject.name }}</td>
+                <td>{{ l.class_group.name }}</td>
+                <td>{{ l.get_lesson_type_display }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center" style="color:#999;padding:24px;">Нет занятий</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

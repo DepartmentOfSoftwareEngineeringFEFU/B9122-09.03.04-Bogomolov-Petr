@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Редактировать учебный план{% endblock %}
+{% block content %}
+<h1>Редактировать учебный план</h1>
+<div class="subtitle">{{ item.class_group.name }} — {{ item.subject.name }}</div>
+<form method="post" class="form">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="hours_per_week">Часов в неделю</label>
+        <input type="number" name="hours_per_week" id="hours_per_week" value="{{ item.hours_per_week }}" min="1" max="10" required>
+    </div>
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Сохранить</button>
+        <a href="{% url 'curriculum_list' class_pk=item.class_group_id %}" class="btn btn-outline">Отмена</a>
+    </div>
+</form>
+{% endblock %}

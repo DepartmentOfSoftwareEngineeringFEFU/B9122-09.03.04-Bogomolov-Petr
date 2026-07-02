@@ -11,13 +11,13 @@ class UserAdmin(BaseUserAdmin):
     search_fields = ['username', 'full_name', 'phone']
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
-        ('Личные данные', {'fields': ('full_name', 'phone', 'role', 'telegram_id', 'student_class')}),
+        ('Личные данные', {'fields': ('full_name', 'phone', 'role', 'telegram_id', 'student_class', 'max_hours_per_week')}),
         ('Права', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
         ('Даты', {'fields': ('last_login', 'date_joined')}),
     )
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('username', 'full_name', 'role', 'password1', 'password2'),
+            'fields': ('username', 'full_name', 'role', 'max_hours_per_week', 'password1', 'password2'),
         }),
     )
