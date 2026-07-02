@@ -37,3 +37,7 @@ goodbyedpi/
 # Temp files
 users.json
 users.txt
+
+# Diploma analysis artifacts
+diploma_*.txt
+opencode_fixes/
