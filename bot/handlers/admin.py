@@ -176,10 +176,28 @@ async def report_substitutions(update: Update, context: ContextTypes.DEFAULT_TYP
 async def report_attendance(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    await query.edit_message_text(
-        'Отчёт по посещаемости в разработке.',
-        reply_markup=reports_kb(),
-    )
+
+    resp = api.get_attendance_report()
+    if resp.status_code != 200:
+        await query.edit_message_text('Ошибка получения отчёта.', reply_markup=reports_kb())
+        return
+
+    data = resp.json()
+    if not data:
+        await query.edit_message_text(
+            '📊 <b>Отчёт: Посещаемость</b>\n\nНет данных о посещаемости.',
+            parse_mode='HTML', reply_markup=reports_kb(),
+        )
+        return
+
+    text = '📊 <b>Отчёт: Посещаемость по классам</b>\n\n'
+    for item in data:
+        text += (
+            f"{item.get('class_name', '—')}: <b>{item.get('attendance_rate', 0)}%</b> "
+            f"({item.get('present', 0)}/{item.get('total', 0)})\n"
+        )
+
+    await query.edit_message_text(text, parse_mode='HTML', reply_markup=reports_kb())
 
 
 async def admin_schedule(update: Update, context: ContextTypes.DEFAULT_TYPE):

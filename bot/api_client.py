@@ -66,13 +66,19 @@ class ApiClient:
     def get_grades(self, student_id):
         return self.get('/grades/', params={'student': student_id})
 
-    def create_grade(self, student_id, subject_id, grade, date):
-        return self.post('/grades/', data={
+    def create_grade(self, student_id, subject_id, grade, date, teacher_id=None):
+        data = {
             'student': student_id,
             'subject': subject_id,
             'grade': grade,
             'date': date,
-        })
+        }
+        if teacher_id:
+            # Бот всегда ходит в API под служебной учётной записью (см. __init__),
+            # поэтому реальный автор оценки передаётся отдельным полем — иначе
+            # оценка была бы записана от имени этой служебной учётки.
+            data['acting_teacher_id'] = teacher_id
+        return self.post('/grades/', data=data)
 
     # --- Substitutions ---
     def get_substitutions(self, status=None):
@@ -86,7 +92,7 @@ class ApiClient:
             'original_lesson': lesson_id,
             'new_teacher': new_teacher_id,
             'reason': reason,
-            'initiator': initiator_id,
+            'acting_initiator_id': initiator_id,
         })
 
     def confirm_substitution(self, sub_id):
@@ -101,3 +107,6 @@ class ApiClient:
 
     def get_grade_statistics(self):
         return self.get('/reports/grades/')
+
+    def get_attendance_report(self):
+        return self.get('/reports/attendance/')

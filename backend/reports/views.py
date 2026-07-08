@@ -1,6 +1,6 @@
 from collections import Counter, defaultdict
 
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Q
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
@@ -59,3 +59,29 @@ def schedule_summary(request):
         'by_day': dict(by_day),
         'by_type': dict(by_type),
     })
+
+
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def attendance_report(request):
+    """FR_A5/UI_06: сводка по посещаемости — доля присутствий по классам."""
+    from grades.models import Attendance
+
+    stats = (
+        Attendance.objects.values('lesson__class_group__name')
+        .annotate(
+            total=Count('id'),
+            present=Count('id', filter=Q(present=True)),
+        )
+        .order_by('lesson__class_group__name')
+    )
+    data = [
+        {
+            'class_name': item['lesson__class_group__name'],
+            'total': item['total'],
+            'present': item['present'],
+            'attendance_rate': round(100 * item['present'] / item['total'], 1) if item['total'] else 0,
+        }
+        for item in stats
+    ]
+    return Response(data)

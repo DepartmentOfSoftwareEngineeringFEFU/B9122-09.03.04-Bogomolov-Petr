@@ -209,6 +209,80 @@ class ScheduleSolverTest(TestCase):
         solved, unresolved = solver.solve()
         self.assertEqual(len(solved), 1)
 
+    def test_solver_c4_rejects_wrong_subject(self):
+        """C4 must be enforced during solve(), not just available as a helper."""
+        lesson = LessonVar(id=1, subject_id=99, class_id=1, teacher_id=1)
+        solver = ScheduleSolver([lesson])
+        solver.set_teacher_subjects({1: {1, 2}})  # teacher 1 cannot teach subject 99
+        solved, unresolved = solver.solve()
+        self.assertEqual(len(solved), 0)
+        self.assertEqual(len(unresolved), 1)
+        self.assertIn('дисциплину', unresolved[0]['reasons'][0])
+
+    def test_solver_c5_respects_per_teacher_workload(self):
+        """C5 must be enforced during solve() using a per-teacher max_hours map."""
+        lessons = [
+            LessonVar(id=1, subject_id=1, class_id=1, teacher_id=1),
+            LessonVar(id=2, subject_id=1, class_id=2, teacher_id=1),
+        ]
+        # 0.75h per lesson; cap of 1h allows only one of the two lessons.
+        solver = ScheduleSolver(lessons, max_hours={1: 1})
+        solver.set_teacher_subjects({1: {1}})
+        solved, unresolved = solver.solve()
+        self.assertEqual(len(solved), 1)
+        self.assertEqual(len(unresolved), 1)
+
+    def test_solver_c7_blocks_shared_room_different_classes(self):
+        """C7: two different classes sharing a default room cannot overlap."""
+        lessons = [
+            LessonVar(id=1, subject_id=1, class_id=1, teacher_id=1),
+            LessonVar(id=2, subject_id=1, class_id=2, teacher_id=2),
+        ]
+        # Only one time slot available forces both lessons into the same slot.
+        one_slot = [ScheduleSolver._default_slots()[0]]
+        solver = ScheduleSolver(lessons, slots=one_slot)
+        solver.set_teacher_subjects({1: {1}, 2: {1}})
+        solver.set_class_rooms({1: 'Каб. 101', 2: 'Каб. 101'})
+        solved, unresolved = solver.solve()
+        self.assertEqual(len(solved), 1)
+        self.assertEqual(len(unresolved), 1)
+
+    def test_solver_c7_allows_different_rooms_same_slot(self):
+        """C7 must not block classes that use different rooms."""
+        lessons = [
+            LessonVar(id=1, subject_id=1, class_id=1, teacher_id=1),
+            LessonVar(id=2, subject_id=1, class_id=2, teacher_id=2),
+        ]
+        one_slot = [ScheduleSolver._default_slots()[0]]
+        solver = ScheduleSolver(lessons, slots=one_slot)
+        solver.set_teacher_subjects({1: {1}, 2: {1}})
+        solver.set_class_rooms({1: 'Каб. 101', 2: 'Каб. 202'})
+        solved, unresolved = solver.solve()
+        self.assertEqual(len(solved), 2)
+        self.assertEqual(len(unresolved), 0)
+
+    def test_solver_incremental_preserves_preassigned(self):
+        """Incremental mode must not re-emit already-existing lessons and must
+        avoid conflicting with them."""
+        existing_slot = ScheduleSolver._default_slots()[0]
+        preassigned = {
+            'existing_1': {
+                'teacher_id': 1, 'class_id': 1,
+                'day': existing_slot.day, 'start': existing_slot.start, 'end': existing_slot.end,
+            }
+        }
+        new_lesson = LessonVar(id=1, subject_id=1, class_id=1, teacher_id=1)
+        solver = ScheduleSolver([new_lesson])
+        solver.set_teacher_subjects({1: {1}})
+        solved, unresolved = solver.solve(preassigned=preassigned)
+        self.assertEqual(len(solved), 1)
+        self.assertNotIn('existing_1', solved)
+        # The new lesson for the same teacher/class must not land in the occupied slot.
+        placed = list(solved.values())[0]
+        self.assertFalse(
+            placed['day'] == existing_slot.day and placed['start'] == existing_slot.start
+        )
+
 
 class VariableSelectorTest(TestCase):
     def test_mcv_selects_most_constrained(self):

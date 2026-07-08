@@ -84,6 +84,28 @@ def lessons_kb(lessons):
     return InlineKeyboardMarkup(rows)
 
 
+# --- Substitution request flow (teacher) ---
+def sub_lessons_kb(lessons):
+    rows = []
+    for l in lessons:
+        label = (
+            f'{l.get("day_of_week_display", "?")} '
+            f'{l.get("start_time", "?")}-{l.get("end_time", "?")} — '
+            f'{l.get("subject_name", "?")} ({l.get("class_name", "?")})'
+        )
+        rows.append([InlineKeyboardButton(label, callback_data=f'sub_lesson_{l["id"]}')])
+    rows.append([InlineKeyboardButton('Отмена', callback_data='back_to_menu')])
+    return InlineKeyboardMarkup(rows)
+
+
+def sub_teachers_kb(teachers):
+    rows = []
+    for t in teachers:
+        rows.append([InlineKeyboardButton(t['full_name'], callback_data=f'sub_teacher_{t["id"]}')])
+    rows.append([InlineKeyboardButton('Отмена', callback_data='back_to_menu')])
+    return InlineKeyboardMarkup(rows)
+
+
 # --- Grade flow keyboards ---
 def classes_kb(classes):
     rows = []

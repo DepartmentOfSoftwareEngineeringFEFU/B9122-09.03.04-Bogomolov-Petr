@@ -1,7 +1,10 @@
+from unittest.mock import patch
+
 from django.test import TestCase, Client
 from django.urls import reverse
 
 from accounts.models import User
+from accounts.notifications import notify_users, send_telegram_message
 from school.models import Class
 
 
@@ -88,3 +91,49 @@ class AccountsViewsTest(TestCase):
         self.client.login(username='admin', password='pass123')
         response = self.client.post(reverse('logout'))
         self.assertEqual(response.status_code, 302)
+
+
+class TelegramNotificationsTest(TestCase):
+    """TG_04: базовая проверка отправки push-уведомлений."""
+
+    def test_no_telegram_id_skips_send(self):
+        self.assertFalse(send_telegram_message(None, 'test'))
+
+    @patch.dict('os.environ', {}, clear=True)
+    def test_missing_token_skips_send(self):
+        self.assertFalse(send_telegram_message(123, 'test'))
+
+    @patch.dict('os.environ', {'TELEGRAM_BOT_TOKEN': 'your_bot_token_here'})
+    def test_placeholder_token_skips_send(self):
+        self.assertFalse(send_telegram_message(123, 'test'))
+
+    @patch('accounts.notifications.requests.post')
+    @patch.dict('os.environ', {'TELEGRAM_BOT_TOKEN': 'test-token'})
+    def test_successful_send(self, mock_post):
+        mock_post.return_value.status_code = 200
+        self.assertTrue(send_telegram_message(123, 'Привет'))
+        mock_post.assert_called_once()
+        self.assertEqual(mock_post.call_args.kwargs['json']['chat_id'], 123)
+
+    @patch('accounts.notifications.requests.post')
+    @patch.dict('os.environ', {'TELEGRAM_BOT_TOKEN': 'test-token'})
+    def test_network_error_is_swallowed(self, mock_post):
+        import requests
+        mock_post.side_effect = requests.RequestException('boom')
+        self.assertFalse(send_telegram_message(123, 'Привет'))
+
+    @patch('accounts.notifications.requests.post')
+    @patch.dict('os.environ', {'TELEGRAM_BOT_TOKEN': 'test-token'})
+    def test_notify_users_skips_those_without_telegram_id(self, mock_post):
+        mock_post.return_value.status_code = 200
+        with_tg = User.objects.create_user(
+            username='u1', password='p', full_name='С Telegram',
+            phone='+1', role='teacher', telegram_id=555,
+        )
+        without_tg = User.objects.create_user(
+            username='u2', password='p', full_name='Без Telegram',
+            phone='+2', role='teacher',
+        )
+        sent = notify_users([with_tg, without_tg], 'test')
+        self.assertEqual(sent, 1)
+        mock_post.assert_called_once()

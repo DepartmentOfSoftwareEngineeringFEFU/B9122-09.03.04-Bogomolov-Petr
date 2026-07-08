@@ -185,12 +185,3 @@ async def my_grades(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text(text, parse_mode='HTML', reply_markup=reply_markup)
     else:
         await update.message.reply_text(text, parse_mode='HTML', reply_markup=reply_markup)
-
-
-async def substitution_request_placeholder(update, context):
-    query = update.callback_query
-    await query.answer()
-    await query.edit_message_text(
-        'Для запроса замены обратитесь к администратору или используйте веб-интерфейс.',
-        reply_markup=back_menu(),
-    )

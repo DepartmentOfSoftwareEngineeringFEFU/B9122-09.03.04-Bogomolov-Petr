@@ -30,6 +30,7 @@
                             <div class="room">{{ lesson.class_group.default_classroom }}</div>
                         </div>
                     </a>
+                    <a href="{% url 'lesson_attendance' lesson.id %}" style="text-decoration:none;font-size:11px;color:#1565c0;display:block;margin-top:2px;">✓ Посещаемость</a>
                     {% empty %}
                     <span style="color:#ccc;font-size:12px;">—</span>
                     {% endfor %}

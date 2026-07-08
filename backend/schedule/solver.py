@@ -70,11 +70,25 @@ class ConstraintChecker:
         return total + new <= max_hours
 
     @staticmethod
-    def no_room_overlap(schedule, lesson, slot):
+    def no_room_overlap(schedule, lesson, slot, class_rooms=None):
+        """C7: два занятия разных классов с одинаковой аудиторией по
+        умолчанию не могут пересекаться по времени. Без переданной карты
+        class_rooms (class_id -> аудитория) ограничение не применяется."""
+        if lesson is None or not class_rooms:
+            return True
+        room = class_rooms.get(lesson.class_id)
+        if not room:
+            return True
         for l in schedule.values():
-            if l.get("day") == slot.day:
-                if not (slot.end <= l["start"] or slot.start >= l["end"]):
-                    return False
+            if l.get("day") != slot.day:
+                continue
+            other_class = l.get("class_id")
+            if other_class == lesson.class_id:
+                continue
+            if class_rooms.get(other_class) != room:
+                continue
+            if not (slot.end <= l["start"] or slot.start >= l["end"]):
+                return False
         return True
 
 
@@ -132,21 +146,60 @@ class ValueSelector:
 
 
 class ScheduleSolver:
-    """Решатель CSP (Backtracking + MCV/LCV)."""
+    """Решатель CSP (Backtracking + MCV/LCV) с ограничениями C1–C7."""
+
+    CONSTRAINT_LABELS = {
+        "no_teacher_overlap": "преподаватель уже занят в это время другим занятием",
+        "no_class_overlap": "класс уже занят другим занятием в это время",
+        "valid_time": "некорректный временной интервал",
+        "correct_teacher": "преподаватель не ведёт данную дисциплину",
+        "workload_ok": "превышена недельная норма часов преподавателя",
+        "no_room_overlap": "аудитория класса занята другим классом в это время",
+    }
 
     def __init__(self, lessons, slots=None, max_hours=36):
         self.lessons = lessons
         self.slots = slots or self._default_slots()
+        # max_hours: либо общее число часов на всех, либо словарь {teacher_id: часы}
         self.max_hours = max_hours
-        self.constraints = [
-            ConstraintChecker.no_teacher_overlap,
-            ConstraintChecker.no_class_overlap,
-            ConstraintChecker.valid_time,
-        ]
         self.teacher_subjects = defaultdict(set)
+        self.class_rooms = {}
+        self.constraints = self._build_constraints()
 
     def set_teacher_subjects(self, mapping):
         self.teacher_subjects = mapping
+
+    def set_class_rooms(self, mapping):
+        """C7: карта {class_id: аудитория}, используемая при проверке пересечения аудиторий."""
+        self.class_rooms = mapping
+
+    def _max_hours_for(self, teacher_id):
+        if isinstance(self.max_hours, dict):
+            return self.max_hours.get(teacher_id, 36)
+        return self.max_hours
+
+    def _build_constraints(self):
+        def correct_teacher(schedule, lesson, slot):
+            return ConstraintChecker.correct_teacher(lesson, self.teacher_subjects)
+
+        def workload_ok(schedule, lesson, slot):
+            return ConstraintChecker.workload_ok(
+                schedule, lesson, slot, self._max_hours_for(lesson.teacher_id)
+            )
+
+        def no_room_overlap(schedule, lesson, slot):
+            return ConstraintChecker.no_room_overlap(
+                schedule, lesson, slot, self.class_rooms
+            )
+
+        return [
+            ConstraintChecker.no_teacher_overlap,
+            ConstraintChecker.no_class_overlap,
+            ConstraintChecker.valid_time,
+            correct_teacher,
+            workload_ok,
+            no_room_overlap,
+        ]
 
     @staticmethod
     def _default_slots():
@@ -166,8 +219,30 @@ class ScheduleSolver:
                 slots.append(TimeSlot(day=day, start=start, end=end))
         return slots
 
-    def solve(self):
-        schedule = {}
+    def diagnose(self, lesson, schedule):
+        """SCH_03: определяет, какие ограничения не позволяют разместить
+        занятие ни в один слот, и возвращает человекочитаемые причины."""
+        reasons = []
+        for c in self.constraints:
+            others = [x for x in self.constraints if x is not c]
+            sole_blocker = any(
+                all(x(schedule, lesson, slot) for x in others) and not c(schedule, lesson, slot)
+                for slot in self.slots
+            )
+            if sole_blocker:
+                reasons.append(self.CONSTRAINT_LABELS.get(c.__name__, c.__name__))
+        if not reasons:
+            reasons.append(
+                "нет свободного слота, одновременно удовлетворяющего всем ограничениям"
+            )
+        return reasons
+
+    def solve(self, preassigned=None):
+        """Решает CSP. preassigned — уже существующие занятия (для режима
+        дозаполнения), учитываются при проверке ограничений, но не
+        возвращаются в результате — возвращаются только новые назначения."""
+        schedule = dict(preassigned or {})
+        locked_keys = set(schedule.keys())
         unresolved = []
         remaining = list(self.lessons)
         random.shuffle(remaining)
@@ -208,7 +283,11 @@ class ScheduleSolver:
                     break
 
             if not assigned:
-                unresolved.append(lesson)
+                unresolved.append({
+                    "lesson": lesson,
+                    "reasons": self.diagnose(lesson, schedule),
+                })
                 remaining.remove(lesson)
 
-        return schedule, unresolved
+        new_schedule = {k: v for k, v in schedule.items() if k not in locked_keys}
+        return new_schedule, unresolved

@@ -5,9 +5,14 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import get_object_or_404, redirect, render
 
 from accounts.models import User
-from grades.models import Grade
+from grades.models import Attendance, Grade
 from school.models import Class, Subject
 from schedule.models import Lesson
+
+DAY_NAMES = {
+    1: 'Понедельник', 2: 'Вторник', 3: 'Среда',
+    4: 'Четверг', 5: 'Пятница', 6: 'Суббота',
+}
 
 
 @login_required
@@ -92,15 +97,50 @@ def lesson_grade(request, lesson_id):
         )
     }
 
-    DAY_NAMES = {
-        1: 'Понедельник', 2: 'Вторник', 3: 'Среда',
-        4: 'Четверг', 5: 'Пятница', 6: 'Суббота',
-    }
-
     return render(request, 'teacher/lesson_grade.html', {
         'lesson': lesson,
         'students': students,
         'existing_grades': existing_grades,
+        'today': today,
+        'day_name': DAY_NAMES.get(lesson.day_of_week, ''),
+    })
+
+
+@login_required
+@user_passes_test(lambda u: u.role == 'teacher')
+def lesson_attendance(request, lesson_id):
+    lesson = get_object_or_404(
+        Lesson.objects.select_related('subject', 'class_group'),
+        id=lesson_id, teacher=request.user,
+    )
+    students = User.objects.filter(
+        role='student', student_class=lesson.class_group,
+    ).order_by('full_name')
+
+    today = date.today()
+
+    if request.method == 'POST':
+        saved = 0
+        for student in students:
+            key = f'present_{student.id}'
+            present = key in request.POST
+            Attendance.objects.update_or_create(
+                lesson=lesson, student=student, date=today,
+                defaults={'present': present, 'marked_by': request.user},
+            )
+            saved += 1
+        messages.success(request, f'Посещаемость сохранена для {saved} учащихся')
+        return redirect('lesson_attendance', lesson_id=lesson.id)
+
+    existing = {
+        a.student_id: a
+        for a in Attendance.objects.filter(lesson=lesson, date=today)
+    }
+
+    return render(request, 'teacher/lesson_attendance.html', {
+        'lesson': lesson,
+        'students': students,
+        'existing': existing,
         'today': today,
         'day_name': DAY_NAMES.get(lesson.day_of_week, ''),
     })

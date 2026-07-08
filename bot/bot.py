@@ -3,7 +3,8 @@ import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
-from telegram.ext import Application, CallbackQueryHandler, CommandHandler
+from telegram.ext import (Application, CallbackQueryHandler, CommandHandler,
+                           MessageHandler, filters)
 from telegram.request import HTTPXRequest
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -15,8 +16,11 @@ from bot.handlers.admin import (admin_reports, admin_schedule, admin_users,
                                  report_attendance, report_grades,
                                  report_substitutions, report_workload,
                                  substitution_confirm, substitution_reject)
-from bot.handlers.start import (back_to_menu, my_grades, my_schedule, start,
-                                 substitution_request_placeholder)
+from bot.handlers.start import back_to_menu, my_grades, my_schedule, start
+from bot.handlers.substitution import (substitution_reason_text,
+                                        substitution_request_start,
+                                        substitution_select_lesson,
+                                        substitution_select_teacher)
 from bot.handlers.teacher import (grade_back_lessons, grade_select_lesson,
                                     grade_select_student, grade_set_value,
                                     teacher_grade_start)
@@ -71,7 +75,12 @@ def main():
     # Common
     app.add_handler(CallbackQueryHandler(my_schedule, pattern='^my_schedule$'))
     app.add_handler(CallbackQueryHandler(my_grades, pattern='^my_grades$'))
-    app.add_handler(CallbackQueryHandler(substitution_request_placeholder, pattern='^substitution_request$'))
+
+    # Teacher: substitution request flow
+    app.add_handler(CallbackQueryHandler(substitution_request_start, pattern='^substitution_request$'))
+    app.add_handler(CallbackQueryHandler(substitution_select_lesson, pattern='^sub_lesson_'))
+    app.add_handler(CallbackQueryHandler(substitution_select_teacher, pattern='^sub_teacher_'))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, substitution_reason_text))
 
     print('Bot started (polling)...')
     app.run_polling(allowed_updates=['message', 'callback_query'])
