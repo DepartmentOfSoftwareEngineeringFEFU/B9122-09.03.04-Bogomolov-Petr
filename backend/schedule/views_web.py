@@ -1,4 +1,5 @@
 import json
+from collections import Counter
 from datetime import time
 
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -137,12 +138,17 @@ def schedule_generate(request):
 
     from .solver import ScheduleSolver, LessonVar
 
-    teachers = User.objects.filter(role='teacher')
+    mode = request.POST.get('mode', 'full')  # 'full' — с нуля, 'incremental' — дозаполнение
+
+    teachers = list(User.objects.filter(role='teacher').prefetch_related('subjects'))
     teacher_subjects = {}
+    teacher_load = {}
     for t in teachers:
-        teacher_subjects[t.id] = set(
-            Lesson.objects.filter(teacher=t).values_list('subject_id', flat=True)
-        )
+        teacher_subjects[t.id] = {s.id for s in t.subjects.all()}
+        teacher_load[t.id] = Lesson.objects.filter(teacher=t).count()
+
+    max_hours = {t.id: (t.max_hours_per_week or 36) for t in teachers}
+    class_rooms = dict(Class.objects.values_list('id', 'default_classroom'))
 
     curriculum = ClassSubject.objects.select_related('class_group', 'subject').all()
     if not curriculum.exists():
@@ -151,29 +157,64 @@ def schedule_generate(request):
             'created': 0, 'unresolved': [], 'total': 0,
         })
 
+    existing_lessons = list(
+        Lesson.objects.select_related('subject', 'teacher', 'class_group').all()
+    )
+    existing_count = Counter((l.class_group_id, l.subject_id) for l in existing_lessons)
+
     lessons = []
+    skipped_no_teacher = []
+    next_id = 1
     for entry in curriculum:
-        for teacher in teachers:
-            if entry.subject_id in teacher_subjects.get(teacher.id, set()):
-                for _ in range(entry.hours_per_week):
-                    lessons.append(LessonVar(
-                        id=len(lessons) + 1,
-                        subject_id=entry.subject_id,
-                        class_id=entry.class_group_id,
-                        teacher_id=teacher.id,
-                    ))
+        qualified = [t for t in teachers if entry.subject_id in teacher_subjects.get(t.id, set())]
+        if not qualified:
+            skipped_no_teacher.append(f'{entry.subject.name} ({entry.class_group.name})')
+            continue
+        # C5/загрузка: выбираем наименее загруженного из квалифицированных преподавателей,
+        # чтобы недельная нагрузка (SCH_01) распределялась равномерно.
+        teacher = min(qualified, key=lambda t: teacher_load.get(t.id, 0))
+        already = existing_count.get((entry.class_group_id, entry.subject_id), 0) if mode == 'incremental' else 0
+        need = max(entry.hours_per_week - already, 0)
+        for _ in range(need):
+            lessons.append(LessonVar(
+                id=next_id,
+                subject_id=entry.subject_id,
+                class_id=entry.class_group_id,
+                teacher_id=teacher.id,
+            ))
+            next_id += 1
+        teacher_load[teacher.id] = teacher_load.get(teacher.id, 0) + need
 
     if not lessons:
+        if skipped_no_teacher:
+            error = 'Не назначены преподаватели для дисциплин: ' + ', '.join(skipped_no_teacher) + '.'
+        elif mode == 'incremental':
+            error = 'Расписание уже полностью покрывает учебный план — дозаполнять нечего.'
+        else:
+            error = 'Нет уроков для генерации. Назначьте преподавателей на дисциплины.'
         return render(request, 'admin/schedule_generate.html', {
-            'error': 'Нет уроков для генерации. Назначьте преподавателей на дисциплины.',
-            'created': 0, 'unresolved': [], 'total': 0,
+            'error': error, 'created': 0, 'unresolved': [], 'total': 0,
         })
 
-    solver = ScheduleSolver(lessons)
+    solver = ScheduleSolver(lessons, max_hours=max_hours)
     solver.set_teacher_subjects(teacher_subjects)
-    solved, unresolved = solver.solve()
+    solver.set_class_rooms(class_rooms)
 
-    Lesson.objects.all().delete()
+    preassigned = {}
+    if mode == 'incremental':
+        for l in existing_lessons:
+            preassigned[f'existing_{l.id}'] = {
+                'teacher_id': l.teacher_id,
+                'class_id': l.class_group_id,
+                'day': l.day_of_week,
+                'start': l.start_time,
+                'end': l.end_time,
+            }
+
+    solved, unresolved = solver.solve(preassigned=preassigned)
+
+    if mode == 'full':
+        Lesson.objects.all().delete()
     Lesson.objects.bulk_create([
         Lesson(
             subject_id=entry['subject_id'],
@@ -187,10 +228,26 @@ def schedule_generate(request):
     ])
     created = len(solved)
 
+    subjects_map = dict(Subject.objects.values_list('id', 'name'))
+    classes_map = dict(Class.objects.values_list('id', 'name'))
+    teachers_map = {t.id: t.full_name for t in teachers}
+
+    unresolved_details = [
+        {
+            'subject': subjects_map.get(item['lesson'].subject_id, '—'),
+            'class_name': classes_map.get(item['lesson'].class_id, '—'),
+            'teacher': teachers_map.get(item['lesson'].teacher_id, '—'),
+            'reasons': item['reasons'],
+        }
+        for item in unresolved
+    ]
+
     return render(request, 'admin/schedule_generate.html', {
         'created': created,
-        'unresolved': unresolved,
+        'unresolved': unresolved_details,
         'total': len(lessons),
+        'mode': mode,
+        'skipped_no_teacher': skipped_no_teacher,
     })
 
 

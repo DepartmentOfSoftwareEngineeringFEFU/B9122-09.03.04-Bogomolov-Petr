@@ -16,6 +16,7 @@ def admin_menu():
          InlineKeyboardButton('Отчёты', callback_data='admin_reports')],
         [InlineKeyboardButton('Расписание', callback_data='admin_schedule'),
          InlineKeyboardButton('Пользователи', callback_data='admin_users')],
+        [InlineKeyboardButton('🚪 Выйти', callback_data='logout')],
     ])
 
 
@@ -24,6 +25,7 @@ def teacher_menu():
         [InlineKeyboardButton('Выставить оценку', callback_data='teacher_grade')],
         [InlineKeyboardButton('Моё расписание', callback_data='my_schedule')],
         [InlineKeyboardButton('Запрос замены', callback_data='substitution_request')],
+        [InlineKeyboardButton('🚪 Выйти', callback_data='logout')],
     ])
 
 
@@ -31,6 +33,7 @@ def student_menu():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton('Моё расписание', callback_data='my_schedule')],
         [InlineKeyboardButton('Мои оценки', callback_data='my_grades')],
+        [InlineKeyboardButton('🚪 Выйти', callback_data='logout')],
     ])
 
 
@@ -80,6 +83,28 @@ def lessons_kb(lessons):
             f'{l.get("subject_name", "?")} ({l.get("class_name", "?")})'
         )
         rows.append([InlineKeyboardButton(label, callback_data=f'grade_lesson_{l["id"]}')])
+    rows.append([InlineKeyboardButton('Отмена', callback_data='back_to_menu')])
+    return InlineKeyboardMarkup(rows)
+
+
+# --- Substitution request flow (teacher) ---
+def sub_lessons_kb(lessons):
+    rows = []
+    for l in lessons:
+        label = (
+            f'{l.get("day_of_week_display", "?")} '
+            f'{l.get("start_time", "?")}-{l.get("end_time", "?")} — '
+            f'{l.get("subject_name", "?")} ({l.get("class_name", "?")})'
+        )
+        rows.append([InlineKeyboardButton(label, callback_data=f'sub_lesson_{l["id"]}')])
+    rows.append([InlineKeyboardButton('Отмена', callback_data='back_to_menu')])
+    return InlineKeyboardMarkup(rows)
+
+
+def sub_teachers_kb(teachers):
+    rows = []
+    for t in teachers:
+        rows.append([InlineKeyboardButton(t['full_name'], callback_data=f'sub_teacher_{t["id"]}')])
     rows.append([InlineKeyboardButton('Отмена', callback_data='back_to_menu')])
     return InlineKeyboardMarkup(rows)
 

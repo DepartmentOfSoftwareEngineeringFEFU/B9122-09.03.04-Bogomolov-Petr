@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load web_extras %}
+{% block title %}Посещаемость{% endblock %}
+{% block content %}
+<h1>{{ lesson.subject.name }}</h1>
+<div class="subtitle">{{ lesson.class_group.name }} · {{ day_name }}, {{ lesson.start_time|time:'H:i' }}–{{ lesson.end_time|time:'H:i' }} · {{ today }}</div>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:40px;">№</th>
+                    <th>Ученик</th>
+                    <th style="width:120px;">Присутствовал</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in students %}
+                <tr>
+                    <td style="color:#999;">{{ forloop.counter }}</td>
+                    <td><strong>{{ student.full_name }}</strong></td>
+                    <td>
+                        <input type="checkbox" name="present_{{ student.id }}"
+                               {% if student.id not in existing or existing|dictkey:student.id|attr:'present' %}checked{% endif %}>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" class="text-center" style="color:#999;padding:24px;">
+                        В этом классе нет учеников
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if students %}
+    <div class="form-actions" style="margin-top:16px;">
+        <button type="submit" class="btn btn-success">💾 Сохранить посещаемость</button>
+        <a href="{% url 'teacher_schedule' %}" class="btn btn-outline">← Назад к расписанию</a>
+    </div>
+    {% endif %}
+</form>
+{% endblock %}

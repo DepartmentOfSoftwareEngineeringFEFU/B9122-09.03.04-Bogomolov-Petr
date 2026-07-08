@@ -156,6 +156,7 @@ async def grade_set_value(update: Update, context: ContextTypes.DEFAULT_TYPE):
         subject_id=data['subject_id'],
         grade=grade_val,
         date=date.today().isoformat(),
+        teacher_id=context.user_data.get('user_id'),
     )
 
     if resp.status_code == 201:

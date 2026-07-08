@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from schedule.models import Lesson
 from .models import Substitution
+from .services import notify_substitution_created, notify_substitution_result
 
 
 @login_required
@@ -28,6 +29,7 @@ def substitution_confirm(request, pk):
         return redirect('substitutions_list')
     sub.status = Substitution.Status.CONFIRMED
     sub.save(update_fields=['status'])
+    notify_substitution_result(sub)
     messages.success(request, 'Замена подтверждена')
     return redirect('substitutions_list')
 
@@ -40,6 +42,7 @@ def substitution_reject(request, pk):
         return redirect('substitutions_list')
     sub.status = Substitution.Status.REJECTED
     sub.save(update_fields=['status'])
+    notify_substitution_result(sub)
     messages.success(request, 'Замена отклонена')
     return redirect('substitutions_list')
 
@@ -51,12 +54,13 @@ def substitution_request(request):
         new_teacher_id = request.POST.get('new_teacher')
         reason = request.POST.get('reason')
         if lesson_id and new_teacher_id and reason:
-            Substitution.objects.create(
+            sub = Substitution.objects.create(
                 original_lesson_id=lesson_id,
                 new_teacher_id=new_teacher_id,
                 initiator=request.user,
                 reason=reason,
             )
+            notify_substitution_created(sub)
             messages.success(request, 'Запрос на замену отправлен')
             return redirect('substitutions_list')
         messages.error(request, 'Заполните все поля')

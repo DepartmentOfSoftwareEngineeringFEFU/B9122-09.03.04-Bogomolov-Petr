@@ -7,20 +7,23 @@ from bot.keyboards import admin_menu, back_menu, main_menu, student_menu, teache
 api = ApiClient()
 
 
+def _unlinked_welcome_text(telegram_id):
+    return (
+        'Добро пожаловать!\n'
+        'Это бот системы управления школой.\n\n'
+        'Ваш Telegram ID не привязан к учётной записи.\n'
+        'Пожалуйста, войдите в веб-интерфейс и привяжите Telegram ID в настройках профиля.\n\n'
+        f'Ваш Telegram ID: <code>{telegram_id}</code>'
+    )
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     telegram_id = update.effective_user.id
     context.user_data['telegram_id'] = telegram_id
 
     user = api.get_user_by_telegram(telegram_id)
     if not user:
-        await update.message.reply_text(
-            'Добро пожаловать!\n'
-            'Это бот системы управления школой.\n\n'
-            'Ваш Telegram ID не привязан к учётной записи.\n'
-            'Пожалуйста, войдите в веб-интерфейс и привяжите Telegram ID в настройках профиля.\n\n'
-            f'Ваш Telegram ID: <code>{telegram_id}</code>',
-            parse_mode='HTML',
-        )
+        await update.message.reply_text(_unlinked_welcome_text(telegram_id), parse_mode='HTML')
         return
 
     context.user_data['user_id'] = user['id']
@@ -187,10 +190,18 @@ async def my_grades(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(text, parse_mode='HTML', reply_markup=reply_markup)
 
 
-async def substitution_request_placeholder(update, context):
+async def logout(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Отвязывает Telegram ID от учётной записи и возвращает на экран
+    привязки (аналог выхода из системы)."""
     query = update.callback_query
     await query.answer()
-    await query.edit_message_text(
-        'Для запроса замены обратитесь к администратору или используйте веб-интерфейс.',
-        reply_markup=back_menu(),
-    )
+
+    user_id = context.user_data.get('user_id')
+    telegram_id = context.user_data.get('telegram_id', update.effective_user.id)
+
+    if user_id:
+        api.unlink_telegram(user_id)
+
+    context.user_data.clear()
+
+    await query.edit_message_text(_unlinked_welcome_text(telegram_id), parse_mode='HTML')

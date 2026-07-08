@@ -3,7 +3,8 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import include, path
 
 from accounts.views_web import dashboard, profile_edit, user_create, user_edit, users_list
-from grades.views_web import grade_add, lesson_grade, student_grades, teacher_grades
+from grades.views_web import (grade_add, lesson_attendance, lesson_grade,
+                               student_grades, teacher_grades)
 from reports.views_web import reports_dashboard
 from schedule.views_web import (my_schedule, schedule_add, schedule_generate,
                                 schedule_list, schedule_move, teacher_workload)
@@ -40,6 +41,7 @@ urlpatterns = [
     path('teacher/grades/', teacher_grades, name='teacher_grades'),
     path('teacher/grades/add/', grade_add, name='grade_add'),
     path('teacher/lessons/<int:lesson_id>/grade/', lesson_grade, name='lesson_grade'),
+    path('teacher/lessons/<int:lesson_id>/attendance/', lesson_attendance, name='lesson_attendance'),
     path('teacher/workload/', teacher_workload, name='teacher_workload'),
     path('student/schedule/', my_schedule, name='student_schedule'),
     path('student/grades/', student_grades, name='student_grades'),

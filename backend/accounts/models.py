@@ -25,6 +25,11 @@ class User(AbstractUser):
         'school.Class', verbose_name='Класс', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='students',
     )
+    subjects = models.ManyToManyField(
+        'school.Subject', verbose_name='Дисциплины', blank=True,
+        related_name='qualified_teachers',
+        help_text='Дисциплины, которые может вести преподаватель',
+    )
     email = models.EmailField(blank=True)
 
     USERNAME_FIELD = 'username'

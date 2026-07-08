@@ -5,7 +5,7 @@ from grades.models import Grade
 from schedule.models import Lesson
 from school.models import Class
 from substitutions.models import Substitution
-from .forms import ProfileForm, UserCreateForm
+from .forms import ProfileForm, UserCreateForm, UserEditForm
 from .models import User
 
 
@@ -67,12 +67,12 @@ def user_create(request):
 def user_edit(request, pk):
     user = get_object_or_404(User, pk=pk)
     if request.method == 'POST':
-        form = UserCreateForm(request.POST, instance=user)
+        form = UserEditForm(request.POST, instance=user)
         if form.is_valid():
             form.save()
             return redirect('users_list')
     else:
-        form = UserCreateForm(instance=user)
+        form = UserEditForm(instance=user)
     return render(request, 'admin/user_form.html', {'form': form, 'edit': True})
 
 

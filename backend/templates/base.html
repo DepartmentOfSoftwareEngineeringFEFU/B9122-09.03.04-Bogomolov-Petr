@@ -48,7 +48,8 @@
             font-size: 12px; cursor: pointer; width: 100%;
         }
         .sidebar .logout-form button:hover { background: rgba(255,255,255,.1); color: #fff; }
-        .main { margin-left: 240px; flex: 1; padding: 32px; max-width: calc(100vw - 240px); }
+        .main { flex: 1; padding: 32px; }
+        body.has-sidebar .main { margin-left: 240px; max-width: calc(100vw - 240px); }
         .main h1 { font-size: 24px; margin-bottom: 8px; }
         {% if user.is_authenticated %}
             {% if user.role == 'admin' %}
@@ -119,6 +120,9 @@
         .form-row input:focus, .form-row select:focus, .form-row textarea:focus { border-color: #1a237e; box-shadow: 0 0 0 3px rgba(26,35,126,.1); }
         .form-row .help-text { font-size: 12px; color: #888; margin-top: 4px; }
         .form-row .errorlist { color: #c62828; font-size: 12px; list-style: none; margin-bottom: 4px; }
+        .form-row ul { list-style: none; }
+        .form-row ul li { margin-bottom: 6px; }
+        .form-row input[type="checkbox"], .form-row input[type="radio"] { width: auto; padding: 0; border: none; margin-right: 6px; }
         .form-actions { display: flex; gap: 10px; margin-top: 8px; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .chart-card { background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.06); padding: 20px; }
@@ -177,7 +181,7 @@
         .pagination a:hover { background: #f5f5f5; }
     </style>
 </head>
-<body>
+<body{% if user.is_authenticated %} class="has-sidebar"{% endif %}>
 {% if user.is_authenticated %}
 <div class="sidebar {% if user.role == 'admin' %}side-admin{% elif user.role == 'teacher' %}side-teacher{% else %}side-student{% endif %}">
     <h2><a href="/">🏫 Школа</a></h2>
@@ -224,5 +228,6 @@
     {% endif %}
     {% block content %}{% endblock %}
 </div>
+{% block extra_js %}{% endblock %}
 </body>
 </html>

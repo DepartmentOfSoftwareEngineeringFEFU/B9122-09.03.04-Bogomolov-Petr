@@ -10,11 +10,25 @@
 </div>
 {% elif created is not None %}
 <div class="alert alert-success">
-    Создано <strong>{{ created }}</strong> занятий из {{ total }}.
+    Создано <strong>{{ created }}</strong> занятий из {{ total }}
+    {% if mode == 'incremental' %}(режим дозаполнения){% else %}(полная генерация){% endif %}.
 </div>
+{% if skipped_no_teacher %}
+<div class="alert alert-warning">
+    Пропущены дисциплины без назначенного преподавателя: {{ skipped_no_teacher|join:', ' }}.
+</div>
+{% endif %}
 {% if unresolved %}
 <div class="alert alert-warning">
-    Не удалось назначить <strong>{{ unresolved|length }}</strong> занятий (из {{ total }}). Проверьте ограничения.
+    <p>Не удалось назначить <strong>{{ unresolved|length }}</strong> занятий:</p>
+    <ul style="margin:8px 0 0 20px;">
+        {% for item in unresolved %}
+        <li>
+            <strong>{{ item.subject }}</strong> — {{ item.class_name }} ({{ item.teacher }}):
+            {{ item.reasons|join:'; ' }}
+        </li>
+        {% endfor %}
+    </ul>
 </div>
 {% endif %}
 <div class="form-actions">
@@ -24,8 +38,20 @@
 {% else %}
 <form method="post" class="form" action="{% url 'schedule_generate' %}">
     {% csrf_token %}
-    <p>Будет выполнена автоматическая генерация расписания на основе учебных планов классов.</p>
-    <p class="text-muted">Все текущие занятия будут удалены и заменены сгенерированными.</p>
+    <p>Автоматическая генерация расписания на основе учебных планов классов с учётом
+    ограничений C1–C7 (занятость преподавателя и класса, соответствие дисциплине,
+    недельная норма часов, пересечение аудиторий).</p>
+    <div class="form-row" style="margin:16px 0;">
+        <label style="display:block;margin-bottom:6px;">
+            <input type="radio" name="mode" value="full" checked>
+            <strong>Полная генерация</strong> — все текущие занятия будут удалены и заменены сгенерированными.
+        </label>
+        <label style="display:block;">
+            <input type="radio" name="mode" value="incremental">
+            <strong>Дозаполнение</strong> — существующие занятия сохраняются, добавляются только недостающие
+            по учебному плану (например, после добавления нового класса).
+        </label>
+    </div>
     <div class="form-actions">
         <button type="submit" class="btn btn-primary">Начать генерацию</button>
         <a href="{% url 'schedule_list' %}" class="btn btn-outline">Отмена</a>
