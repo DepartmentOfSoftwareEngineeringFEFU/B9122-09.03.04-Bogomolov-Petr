@@ -11,7 +11,7 @@ from django.contrib.auth.hashers import make_password
 from accounts.models import User
 from school.models import Class, ClassSubject, Subject
 from schedule.models import Lesson
-from grades.models import Grade
+from grades.models import Attendance, Grade
 from substitutions.models import Substitution
 
 
@@ -148,6 +148,23 @@ def seed():
             defaults={'grade': grade},
         )
 
+    attendance_data = [
+        (lessons[0], students[0], '2026-05-20', True, teacher1),
+        (lessons[0], students[1], '2026-05-20', True, teacher1),
+        (lessons[0], students[2], '2026-05-20', False, teacher1),
+        (lessons[3], students[3], '2026-05-20', True, teacher2),
+        (lessons[3], students[4], '2026-05-20', False, teacher2),
+        (lessons[3], students[5], '2026-05-20', True, teacher2),
+        (lessons[0], students[0], '2026-05-27', True, teacher1),
+        (lessons[0], students[1], '2026-05-27', False, teacher1),
+        (lessons[0], students[2], '2026-05-27', True, teacher1),
+    ]
+    for lesson, student, att_date, present, teacher in attendance_data:
+        Attendance.objects.get_or_create(
+            lesson=lesson, student=student, date=att_date,
+            defaults={'present': present, 'marked_by': teacher},
+        )
+
     substitution, _ = Substitution.objects.get_or_create(
         original_lesson=lessons[0],
         defaults={
@@ -166,6 +183,7 @@ def seed():
     print(f'  Дисциплин: {Subject.objects.count()}')
     print(f'  Занятий: {Lesson.objects.count()}')
     print(f'  Оценок: {Grade.objects.count()}')
+    print(f'  Записей посещаемости: {Attendance.objects.count()}')
     print(f'  Замен: {Substitution.objects.count()}')
 
 
