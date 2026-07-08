@@ -2,12 +2,89 @@
 {% block title %}Отчёты{% endblock %}
 {% block content %}
 <h1>Отчёты и аналитика</h1>
-<div class="subtitle">Успеваемость и нагрузка по классам и дисциплинам</div>
+<div class="subtitle">Успеваемость, посещаемость и нагрузка по классам и дисциплинам</div>
+
+<form method="get" class="toolbar" style="background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);padding:16px 20px;margin-bottom:20px;">
+    <div class="filters">
+        <select name="class_id" onchange="this.form.submit()">
+            <option value="">Все классы</option>
+            {% for c in classes %}
+            <option value="{{ c.id }}" {% if c.id == selected_class_id %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="subject_id" onchange="this.form.submit()">
+            <option value="">Все дисциплины</option>
+            {% for s in subjects %}
+            <option value="{{ s.id }}" {% if s.id == selected_subject_id %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+        </select>
+        {% if selected_class_id or selected_subject_id %}
+        <a href="{% url 'reports_dashboard' %}" class="btn btn-outline btn-sm">Сбросить фильтр</a>
+        {% endif %}
+    </div>
+</form>
+
+{{ grade_trend_labels|json_script:"grade-trend-labels" }}
+{{ grade_trend_values|json_script:"grade-trend-values" }}
+{{ grade_distribution_labels|json_script:"grade-dist-labels" }}
+{{ grade_distribution_values|json_script:"grade-dist-values" }}
+{{ workload_labels|json_script:"workload-labels" }}
+{{ workload_values|json_script:"workload-values" }}
+{{ attendance_labels|json_script:"attendance-labels" }}
+{{ attendance_values|json_script:"attendance-values" }}
 
 <div class="grid-2">
     <div class="chart-card">
+        <h3>Динамика среднего балла{% if selected_class_id or selected_subject_id %} (по фильтру){% endif %}</h3>
+        {% if grade_trend_labels %}
+        <canvas id="gradeTrendChart" height="180"></canvas>
+        {% else %}
+        <div style="padding:24px;text-align:center;color:#999;">Нет данных за выбранный период</div>
+        {% endif %}
+    </div>
+
+    <div class="chart-card">
+        <h3>Распределение оценок{% if selected_class_id or selected_subject_id %} (по фильтру){% endif %}</h3>
+        {% if grade_stats %}
+        <canvas id="gradeDistChart" height="180"></canvas>
+        {% else %}
+        <div style="padding:24px;text-align:center;color:#999;">Нет данных</div>
+        {% endif %}
+    </div>
+
+    <div class="chart-card">
+        <h3>Посещаемость по классам</h3>
+        {% if attendance_stats %}
+        <canvas id="attendanceChart" height="180"></canvas>
+        {% else %}
+        <div style="padding:24px;text-align:center;color:#999;">Нет данных</div>
+        {% endif %}
+        <table class="table" style="width:100%;border-collapse:collapse;margin-top:12px;">
+            <thead>
+                <tr><th style="text-align:left;padding:8px 12px;font-size:11px;color:#888;text-transform:uppercase;border-bottom:1px solid #eee;">Класс</th><th style="text-align:left;padding:8px 12px;font-size:11px;color:#888;text-transform:uppercase;border-bottom:1px solid #eee;">Присутствий</th><th style="text-align:left;padding:8px 12px;font-size:11px;color:#888;text-transform:uppercase;border-bottom:1px solid #eee;">%</th></tr>
+            </thead>
+            <tbody>
+                {% for item in attendance_stats %}
+                <tr>
+                    <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f5f5f5;">{{ item.class_name }}</td>
+                    <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f5f5f5;">{{ item.present }} / {{ item.total }}</td>
+                    <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f5f5f5;"><strong>{{ item.rate }}%</strong></td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="3" style="padding:16px;text-align:center;color:#999;">Нет данных</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="chart-card">
         <h3>Нагрузка преподавателей</h3>
-        <table class="table" style="width:100%;border-collapse:collapse;">
+        {% if workload %}
+        <canvas id="workloadChart" height="180"></canvas>
+        {% else %}
+        <div style="padding:24px;text-align:center;color:#999;">Нет данных</div>
+        {% endif %}
+        <table class="table" style="width:100%;border-collapse:collapse;margin-top:12px;">
             <thead>
                 <tr><th style="text-align:left;padding:8px 12px;font-size:11px;color:#888;text-transform:uppercase;border-bottom:1px solid #eee;">Преподаватель</th><th style="text-align:left;padding:8px 12px;font-size:11px;color:#888;text-transform:uppercase;border-bottom:1px solid #eee;">Занятий</th></tr>
             </thead>
@@ -45,26 +122,6 @@
     </div>
 
     <div class="chart-card">
-        <h3>Посещаемость по классам</h3>
-        <table class="table" style="width:100%;border-collapse:collapse;">
-            <thead>
-                <tr><th style="text-align:left;padding:8px 12px;font-size:11px;color:#888;text-transform:uppercase;border-bottom:1px solid #eee;">Класс</th><th style="text-align:left;padding:8px 12px;font-size:11px;color:#888;text-transform:uppercase;border-bottom:1px solid #eee;">Присутствий</th><th style="text-align:left;padding:8px 12px;font-size:11px;color:#888;text-transform:uppercase;border-bottom:1px solid #eee;">%</th></tr>
-            </thead>
-            <tbody>
-                {% for item in attendance_stats %}
-                <tr>
-                    <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f5f5f5;">{{ item.class_name }}</td>
-                    <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f5f5f5;">{{ item.present }} / {{ item.total }}</td>
-                    <td style="padding:8px 12px;font-size:13px;border-bottom:1px solid #f5f5f5;"><strong>{{ item.rate }}%</strong></td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="3" style="padding:16px;text-align:center;color:#999;">Нет данных</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-
-    <div class="chart-card">
         <h3>Статистика расписания</h3>
         <div style="padding:12px 0;">
             <p style="font-size:14px;color:#333;margin-bottom:8px;">Всего занятий: <strong>{{ total_lessons }}</strong></p>
@@ -78,4 +135,87 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+    const PALETTE = ['#1a237e', '#2e7d32', '#e65100', '#c62828', '#6a1b9a', '#00838f'];
+
+    function readJSON(id) {
+        const el = document.getElementById(id);
+        return el ? JSON.parse(el.textContent) : [];
+    }
+
+    const gradeTrendLabels = readJSON('grade-trend-labels');
+    const gradeTrendValues = readJSON('grade-trend-values');
+    const gradeTrendCanvas = document.getElementById('gradeTrendChart');
+    if (gradeTrendCanvas) {
+        new Chart(gradeTrendCanvas, {
+            type: 'line',
+            data: {
+                labels: gradeTrendLabels,
+                datasets: [{
+                    label: 'Средний балл',
+                    data: gradeTrendValues,
+                    borderColor: PALETTE[0],
+                    backgroundColor: 'rgba(26,35,126,.1)',
+                    tension: .3,
+                    fill: true,
+                }],
+            },
+            options: {
+                scales: { y: { min: 1, max: 5 } },
+                plugins: { legend: { display: false } },
+            },
+        });
+    }
+
+    const distLabels = readJSON('grade-dist-labels');
+    const distValues = readJSON('grade-dist-values');
+    const gradeDistCanvas = document.getElementById('gradeDistChart');
+    if (gradeDistCanvas) {
+        new Chart(gradeDistCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: distLabels.map(v => 'Оценка ' + v),
+                datasets: [{ data: distValues, backgroundColor: PALETTE }],
+            },
+        });
+    }
+
+    const attendanceLabels = readJSON('attendance-labels');
+    const attendanceValues = readJSON('attendance-values');
+    const attendanceCanvas = document.getElementById('attendanceChart');
+    if (attendanceCanvas) {
+        new Chart(attendanceCanvas, {
+            type: 'bar',
+            data: {
+                labels: attendanceLabels,
+                datasets: [{ label: 'Посещаемость, %', data: attendanceValues, backgroundColor: PALETTE[1] }],
+            },
+            options: {
+                scales: { y: { min: 0, max: 100 } },
+                plugins: { legend: { display: false } },
+            },
+        });
+    }
+
+    const workloadLabels = readJSON('workload-labels');
+    const workloadValues = readJSON('workload-values');
+    const workloadCanvas = document.getElementById('workloadChart');
+    if (workloadCanvas) {
+        new Chart(workloadCanvas, {
+            type: 'bar',
+            data: {
+                labels: workloadLabels,
+                datasets: [{ label: 'Занятий', data: workloadValues, backgroundColor: PALETTE[2] }],
+            },
+            options: {
+                indexAxis: 'y',
+                plugins: { legend: { display: false } },
+            },
+        });
+    }
+</script>
 {% endblock %}
