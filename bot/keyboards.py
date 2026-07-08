@@ -16,6 +16,7 @@ def admin_menu():
          InlineKeyboardButton('Отчёты', callback_data='admin_reports')],
         [InlineKeyboardButton('Расписание', callback_data='admin_schedule'),
          InlineKeyboardButton('Пользователи', callback_data='admin_users')],
+        [InlineKeyboardButton('🚪 Выйти', callback_data='logout')],
     ])
 
 
@@ -24,6 +25,7 @@ def teacher_menu():
         [InlineKeyboardButton('Выставить оценку', callback_data='teacher_grade')],
         [InlineKeyboardButton('Моё расписание', callback_data='my_schedule')],
         [InlineKeyboardButton('Запрос замены', callback_data='substitution_request')],
+        [InlineKeyboardButton('🚪 Выйти', callback_data='logout')],
     ])
 
 
@@ -31,6 +33,7 @@ def student_menu():
     return InlineKeyboardMarkup([
         [InlineKeyboardButton('Моё расписание', callback_data='my_schedule')],
         [InlineKeyboardButton('Мои оценки', callback_data='my_grades')],
+        [InlineKeyboardButton('🚪 Выйти', callback_data='logout')],
     ])
 
 

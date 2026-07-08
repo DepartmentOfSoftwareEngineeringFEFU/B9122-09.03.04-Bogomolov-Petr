@@ -36,6 +36,9 @@ class ApiClient:
     def get_teachers(self):
         return self.get('/users/', params={'role': 'teacher'})
 
+    def unlink_telegram(self, user_id):
+        return self.patch(f'/users/{user_id}/unlink_telegram/')
+
     # --- Classes ---
     def get_classes(self):
         return self.get('/classes/')

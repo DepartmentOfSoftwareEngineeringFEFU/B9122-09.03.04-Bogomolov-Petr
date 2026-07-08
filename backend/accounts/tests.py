@@ -137,3 +137,75 @@ class TelegramNotificationsTest(TestCase):
         sent = notify_users([with_tg, without_tg], 'test')
         self.assertEqual(sent, 1)
         mock_post.assert_called_once()
+
+
+class TelegramLinkApiTest(TestCase):
+    """Привязка/отвязка Telegram ID через API (бот использует эти эндпоинты
+    от имени служебного staff-аккаунта, поэтому доступ разграничен: только
+    сам пользователь или staff)."""
+
+    def setUp(self):
+        self.client = Client()
+        self.admin = User.objects.create_user(
+            username='admin', password='p', full_name='Админ',
+            phone='+0', role='admin', is_staff=True,
+        )
+        self.teacher = User.objects.create_user(
+            username='t1', password='p', full_name='Учитель',
+            phone='+1', role='teacher', telegram_id=111,
+        )
+        self.other_teacher = User.objects.create_user(
+            username='t2', password='p', full_name='Другой учитель',
+            phone='+2', role='teacher',
+        )
+
+    def test_staff_can_link_telegram_for_any_user(self):
+        self.client.login(username='admin', password='p')
+        response = self.client.patch(
+            f'/api/users/{self.other_teacher.id}/link_telegram/',
+            {'telegram_id': 999}, content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.other_teacher.refresh_from_db()
+        self.assertEqual(self.other_teacher.telegram_id, 999)
+
+    def test_user_can_link_own_telegram(self):
+        self.client.login(username='t2', password='p')
+        response = self.client.patch(
+            f'/api/users/{self.other_teacher.id}/link_telegram/',
+            {'telegram_id': 888}, content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.other_teacher.refresh_from_db()
+        self.assertEqual(self.other_teacher.telegram_id, 888)
+
+    def test_user_cannot_link_telegram_for_another_user(self):
+        self.client.login(username='t2', password='p')
+        response = self.client.patch(
+            f'/api/users/{self.teacher.id}/link_telegram/',
+            {'telegram_id': 777}, content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 403)
+        self.teacher.refresh_from_db()
+        self.assertEqual(self.teacher.telegram_id, 111)
+
+    def test_staff_can_unlink_telegram(self):
+        self.client.login(username='admin', password='p')
+        response = self.client.patch(f'/api/users/{self.teacher.id}/unlink_telegram/')
+        self.assertEqual(response.status_code, 200)
+        self.teacher.refresh_from_db()
+        self.assertIsNone(self.teacher.telegram_id)
+
+    def test_user_can_unlink_own_telegram(self):
+        self.client.login(username='t1', password='p')
+        response = self.client.patch(f'/api/users/{self.teacher.id}/unlink_telegram/')
+        self.assertEqual(response.status_code, 200)
+        self.teacher.refresh_from_db()
+        self.assertIsNone(self.teacher.telegram_id)
+
+    def test_user_cannot_unlink_another_users_telegram(self):
+        self.client.login(username='t2', password='p')
+        response = self.client.patch(f'/api/users/{self.teacher.id}/unlink_telegram/')
+        self.assertEqual(response.status_code, 403)
+        self.teacher.refresh_from_db()
+        self.assertEqual(self.teacher.telegram_id, 111)

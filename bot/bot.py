@@ -16,7 +16,7 @@ from bot.handlers.admin import (admin_reports, admin_schedule, admin_users,
                                  report_attendance, report_grades,
                                  report_substitutions, report_workload,
                                  substitution_confirm, substitution_reject)
-from bot.handlers.start import back_to_menu, my_grades, my_schedule, start
+from bot.handlers.start import back_to_menu, logout, my_grades, my_schedule, start
 from bot.handlers.substitution import (substitution_reason_text,
                                         substitution_request_start,
                                         substitution_select_lesson,
@@ -47,6 +47,7 @@ def main():
 
     # Navigation
     app.add_handler(CallbackQueryHandler(back_to_menu, pattern='^back_to_menu$'))
+    app.add_handler(CallbackQueryHandler(logout, pattern='^logout$'))
 
     # Admin: substitutions
     app.add_handler(CallbackQueryHandler(admin_substitutions, pattern='^admin_substitutions$'))
