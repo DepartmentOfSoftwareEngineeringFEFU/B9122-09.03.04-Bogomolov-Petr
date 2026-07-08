@@ -1,6 +1,7 @@
 from datetime import time
 
-from django.test import TestCase
+from django.test import Client, TestCase
+from django.urls import reverse
 
 from schedule.solver import (ConstraintChecker, LessonVar, ScheduleSolver,
                               TimeSlot, VariableSelector, ValueSelector)
@@ -430,3 +431,46 @@ class ScheduleMoveViewTest(TestCase):
         self.assertEqual(resp.status_code, 200)
         data = resp.json()
         self.assertTrue(data['ok'])
+
+
+class ScheduleGenerateViewTest(TestCase):
+    """SCH_01: генерация должна работать с чистого листа, если у
+    преподавателей явно указаны дисциплины (User.subjects), а не только
+    когда в базе уже есть занятия, из которых можно их вывести."""
+
+    def setUp(self):
+        from accounts.models import User
+        from school.models import Class, ClassSubject, Subject
+
+        self.client = Client()
+        self.admin = User.objects.create_user(
+            username='admin', password='pass123',
+            full_name='Админ', phone='+0', role='admin',
+        )
+        self.teacher = User.objects.create_user(
+            username='t1', password='pass123',
+            full_name='Учитель', phone='+1', role='teacher',
+            max_hours_per_week=36,
+        )
+        self.cls = Class.objects.create(name='5А', default_classroom='Каб. 1')
+        self.subject = Subject.objects.create(name='Математика')
+        ClassSubject.objects.create(class_group=self.cls, subject=self.subject, hours_per_week=3)
+        self.ClassSubject = ClassSubject
+
+    def test_cold_start_generation_uses_explicit_teacher_subjects(self):
+        """No pre-existing lessons at all — only User.subjects declares who
+        can teach what. Previously this produced 0 lessons (bootstrap bug)."""
+        self.teacher.subjects.add(self.subject)
+        self.client.login(username='admin', password='pass123')
+        response = self.client.post(reverse('schedule_generate'), {'mode': 'full'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['created'], 3)
+
+    def test_cold_start_without_subjects_skips_teacher(self):
+        """Without an explicit subject assignment, no teacher qualifies for
+        the curriculum entry, and the admin gets a clear error naming the
+        subject — instead of silently producing zero lessons."""
+        self.client.login(username='admin', password='pass123')
+        response = self.client.post(reverse('schedule_generate'), {'mode': 'full'})
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Математика', response.context['error'])

@@ -140,13 +140,11 @@ def schedule_generate(request):
 
     mode = request.POST.get('mode', 'full')  # 'full' — с нуля, 'incremental' — дозаполнение
 
-    teachers = list(User.objects.filter(role='teacher'))
+    teachers = list(User.objects.filter(role='teacher').prefetch_related('subjects'))
     teacher_subjects = {}
     teacher_load = {}
     for t in teachers:
-        teacher_subjects[t.id] = set(
-            Lesson.objects.filter(teacher=t).values_list('subject_id', flat=True)
-        )
+        teacher_subjects[t.id] = {s.id for s in t.subjects.all()}
         teacher_load[t.id] = Lesson.objects.filter(teacher=t).count()
 
     max_hours = {t.id: (t.max_hours_per_week or 36) for t in teachers}

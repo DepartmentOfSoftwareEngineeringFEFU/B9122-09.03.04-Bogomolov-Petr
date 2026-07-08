@@ -7,7 +7,9 @@
     <form method="post">
         {% csrf_token %}
         {% for field in form %}
-        <div class="form-row">
+        <div class="form-row"
+             {% if field.name == 'max_hours_per_week' or field.name == 'subjects' %}data-role-fields="teacher"
+             {% elif field.name == 'student_class' %}data-role-fields="student"{% endif %}>
             <label>{{ field.label }}</label>
             {{ field }}
             {% if field.help_text %}<div class="help-text">{{ field.help_text }}</div>{% endif %}
@@ -20,4 +22,23 @@
         </div>
     </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (function () {
+        var roleSelect = document.getElementById('id_role');
+        if (!roleSelect) return;
+
+        function updateVisibility() {
+            var role = roleSelect.value;
+            document.querySelectorAll('[data-role-fields]').forEach(function (row) {
+                row.style.display = (row.dataset.roleFields === role) ? '' : 'none';
+            });
+        }
+
+        roleSelect.addEventListener('change', updateVisibility);
+        updateVisibility();
+    })();
+</script>
 {% endblock %}

@@ -74,6 +74,9 @@ def seed():
         subj, _ = Subject.objects.get_or_create(name=name)
         subjects[name] = subj
 
+    teacher1.subjects.set([subjects['Математика'], subjects['Русский язык'], subjects['Литература']])
+    teacher2.subjects.set([subjects['Физика'], subjects['Информатика'], subjects['Английский язык'], subjects['История']])
+
     students_data = [
         ('Алексеев Дмитрий', class_a, 'alekseev'),
         ('Белова Анна', class_a, 'belova'),
